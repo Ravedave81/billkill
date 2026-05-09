@@ -1,27 +1,86 @@
 body{
 font-family:Arial, sans-serif;
-max-width:900px;
+max-width:980px;
 margin:auto;
 padding:20px;
 color:#111;
+background:#f3f3f3;
+}
+
+.app>h1{
+margin-left:10px;
+}
+
+#rechnung{
+box-sizing:border-box;
+max-width:820px;
+min-height:1120px;
+margin:0 auto 30px;
+padding:52px 58px 220px;
+background:#fff;
+box-shadow:0 8px 28px rgba(0,0,0,.12);
+font-size:14px;
+line-height:1.45;
 }
 
 .header{
 display:flex;
 justify-content:space-between;
 gap:30px;
-margin-bottom:40px;
+margin-bottom:54px;
+}
+
+.sender-block{
+line-height:1.45;
 }
 
 .rechts{
 text-align:right;
 }
 
+.invoice-meta b{
+font-size:25px;
+letter-spacing:0;
+}
+
 .kunde{
 display:flex;
 justify-content:space-between;
 gap:30px;
-margin-bottom:30px;
+margin-bottom:46px;
+}
+
+.sender-line{
+font-size:10px;
+color:#666;
+margin-bottom:12px;
+text-decoration:underline;
+}
+
+.customer-address{
+white-space:normal;
+line-height:1.5;
+}
+
+.rental-period{
+min-width:190px;
+text-align:right;
+}
+
+.invoice-copy{
+line-height:1.5;
+}
+
+.invoice-copy p{
+margin:0 0 12px;
+}
+
+.intro-copy{
+margin-bottom:26px;
+}
+
+.closing-copy{
+margin-top:34px;
 }
 
 table{
@@ -31,22 +90,49 @@ margin-top:20px;
 }
 
 th,td{
-border-bottom:1px solid #ccc;
-padding:10px;
+border-bottom:1px solid #d4d4d4;
+padding:9px 8px;
 text-align:left;
 vertical-align:top;
 }
 
+th{
+font-size:12px;
+font-weight:700;
+text-transform:uppercase;
+background:#f7f7f7;
+}
+
+th:first-child,td:first-child{
+width:52px;
+}
+
+th:nth-child(3),td:nth-child(3),
+th:nth-child(4),td:nth-child(4){
+text-align:right;
+white-space:nowrap;
+}
+
 .summen{
 text-align:right;
-margin-top:30px;
+margin-top:24px;
+}
+
+.summen p{
+margin:4px 0;
+}
+
+.summen h2{
+margin-top:12px;
+font-size:20px;
 }
 
 .form{
-background:#f4f4f4;
+background:#fff;
 padding:20px;
-margin-bottom:40px;
+margin:0 auto 40px;
 border-radius:8px;
+box-shadow:0 4px 18px rgba(0,0,0,.08);
 }
 
 input,textarea,select{
@@ -68,8 +154,8 @@ margin-right:10px;
 }
 
 .invoice-footer{
-margin-top:60px;
-font-size:12px;
+margin-top:70px;
+font-size:11px;
 line-height:1.35;
 }
 
@@ -98,11 +184,20 @@ text-decoration:none;
 }
 
 @media (max-width:700px){
+body{
+padding:10px;
+}
+
+#rechnung{
+padding:32px 24px 220px;
+min-height:auto;
+}
+
 .header,.kunde{
 display:block;
 }
 
-.rechts{
+.rechts,.rental-period{
 text-align:left;
 margin-top:24px;
 }
@@ -113,20 +208,31 @@ grid-template-columns:1fr;
 }
 
 @media print{
-.form{display:none;}
-button{display:none;}
-
-.invoice-footer{
-position:fixed;
-bottom:0;
-left:0;
-right:0;
-margin:0 auto;
-max-width:900px;
+body{
+max-width:none;
+margin:0;
+padding:0;
 background:#fff;
 }
 
-body{
-padding-bottom:190px;
+.app>h1{display:none;}
+.form{display:none;}
+button{display:none;}
+
+#rechnung{
+max-width:none;
+min-height:auto;
+margin:0;
+padding:18mm 16mm 45mm;
+box-shadow:none;
+}
+
+.invoice-footer{
+position:fixed;
+bottom:10mm;
+left:16mm;
+right:16mm;
+margin:0;
+background:#fff;
 }
 }
