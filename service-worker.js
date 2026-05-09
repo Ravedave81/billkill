@@ -1,13 +1,13 @@
 const CACHE = "rechnungsapp-v2";
 
 const urls = [
-"/",
-"/index.html",
-"/style.css",
-"/app.js",
-"/manifest.json",
-"/assets/fussnote.svg",
-"/icons/icon.svg"
+"./",
+"index.html",
+"style.css",
+"app.js",
+"manifest.json",
+"assets/fussnote.svg",
+"icons/icon.svg"
 ];
 
 self.addEventListener("install", e=>{
