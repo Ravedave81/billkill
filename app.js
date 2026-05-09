@@ -57,6 +57,34 @@ return String(text ?? "")
 .replaceAll("'", "&apos;")
 }
 
+function extrahiereNachname(name){
+let ersteZeile = String(name ?? "").split(/\r?\n/)[0].trim()
+if(!ersteZeile) return ""
+let teile = ersteZeile
+.replace(/^(Herrn?|Frau|Familie)\s+/i, "")
+.replaceAll(",", " ")
+.split(/\s+/)
+.filter(Boolean)
+return teile.at(-1) || ""
+}
+
+function erstelleAnrede(anrede, name){
+let nachname = extrahiereNachname(name)
+if(anrede === "Sehr geehrte Frau"){
+return nachname ? `Sehr geehrte Frau ${nachname}` : "Sehr geehrte Frau"
+}
+if(anrede === "Sehr geehrter Herr"){
+return nachname ? `Sehr geehrter Herr ${nachname}` : "Sehr geehrter Herr"
+}
+return "Sehr geehrte Damen und Herren"
+}
+
+function erstelleBuchungstext(anreise, abreise){
+let start = formatDatum(anreise) || "xx"
+let ende = formatDatum(abreise) || "xx"
+return `vielen Dank für die Hausbuchung in der Zeit vom ${start} bis ${ende} und Ihr Vertrauen.`
+}
+
 function berechneNaechte(){
 
 let anreise = document.getElementById("anreise").value
@@ -162,7 +190,8 @@ document.getElementById("r_datum").innerText = formatDatum(daten.datum)
 document.getElementById("kundeAdresse").innerHTML =
 esc(daten.name) + "<br>" + esc(daten.adresse).replaceAll("\n", "<br>")
 
-document.getElementById("anredeText").innerText = daten.anrede + ","
+document.getElementById("anredeText").innerText = erstelleAnrede(daten.anrede, daten.name) + ","
+document.getElementById("buchungsDankText").innerText = erstelleBuchungstext(daten.anreise, daten.abreise)
 }
 
 function downloadDatei(inhalt, dateiname, mimeType){
