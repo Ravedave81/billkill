@@ -67,13 +67,13 @@
 <div id="rechnung">
 
 <div class="header">
-<div>
+<div class="sender-block">
 <b>Wohnzeit-Köln</b><br>
 Murgweg 2<br>
 51061 Köln
 </div>
 
-<div class="rechts">
+<div class="rechts invoice-meta">
 <b>RECHNUNG</b><br><br>
 Rechnungsnummer: <span id="r_nummer"></span><br>
 Rechnungsdatum: <span id="r_datum"></span>
@@ -81,14 +81,21 @@ Rechnungsdatum: <span id="r_datum"></span>
 </div>
 
 <div class="kunde">
-<div id="kundeAdresse"></div>
 <div>
+<div class="sender-line">Wohnzeit-Köln, Murgweg 2, 51061 Köln</div>
+<div id="kundeAdresse" class="customer-address"></div>
+</div>
+<div class="rental-period">
 Mietzeitraum:<br>
 <span id="zeitraum"></span>
 </div>
 </div>
 
+<section class="invoice-copy intro-copy">
 <p id="anredeText"></p>
+<p id="buchungsDankText"></p>
+<p>Hiermit erlauben wir uns die folgenden Leistungen in Rechnung zu stellen:</p>
+</section>
 
 <table>
 <thead>
@@ -108,6 +115,13 @@ Mietzeitraum:<br>
 <p>Netto: <span id="netto"></span></p>
 <h2>Gesamtsumme: <span id="gesamt"></span></h2>
 </div>
+
+<section class="invoice-copy closing-copy">
+<p><strong>Zahlungsbedingungen:</strong> Zahlung per sofort und ohne Abzüge.</p>
+<p>Bei Rückfragen stehen wir selbstverständlich jederzeit gerne zur Verfügung.</p>
+<p>Mit freundlichen Grüßen</p>
+<p>Sarah und David Brand</p>
+</section>
 
 <footer class="invoice-footer" aria-label="Rechnungsfuß">
 <div class="footer-image" aria-hidden="true">
