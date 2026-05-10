@@ -146,6 +146,13 @@ border-radius:8px;
 box-shadow:0 4px 18px rgba(0,0,0,.08);
 }
 
+.sonderkondition{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:0 18px;
+margin-top:8px;
+}
+
 input,textarea,select{
 box-sizing:border-box;
 width:100%;
@@ -223,6 +230,10 @@ display:block;
 .rechts,.rental-period{
 text-align:left;
 margin-top:24px;
+}
+
+.sonderkondition{
+grid-template-columns:1fr;
 }
 
 .footer-data{
