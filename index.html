@@ -1,269 +1,179 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Rechnung – Wohnzeit Köln</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rechnung - Wohnzeit Köln</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
 </head>
 <body>
+
 <div class="app">
 
-  <h1>🏠 Wohnzeit Köln — Rechnungsersteller</h1>
+<h1>Rechnung</h1>
 
-  <!-- ══════════════════════════════════════
-       INPUT FORM
-  ══════════════════════════════════════ -->
-  <div class="form" id="formBereich">
+<div class="form">
 
-    <h2>Rechnungsdaten</h2>
+<h2>Rechnungsdaten</h2>
 
-    <label>Rechnungsnummer</label>
-    <input type="text" id="rechnungsnummer" placeholder="z.B. 5/2024">
+<label>Rechnungsnummer</label>
+<input type="text" id="rechnungsnummer">
 
-    <label>Rechnungsdatum</label>
-    <input type="date" id="datum">
+<label>Rechnungsdatum</label>
+<input type="date" id="datum">
 
-    <h2>Kunde</h2>
+<h2>Kunde</h2>
 
-    <label>Anrede</label>
-    <select id="anrede">
-      <option>Sehr geehrte Damen und Herren</option>
-      <option>Sehr geehrter Herr</option>
-      <option>Sehr geehrte Frau</option>
-    </select>
+<label>Anrede</label>
+<select id="anrede">
+<option>Sehr geehrte Damen und Herren</option>
+<option>Sehr geehrter Herr</option>
+<option>Sehr geehrte Frau</option>
+</select>
 
-    <label>Name</label>
-    <input type="text" id="name" placeholder="Max Mustermann">
+<label>Name</label>
+<input type="text" id="name">
 
-    <label>Adresse</label>
-    <textarea id="adresse" placeholder="Musterstraße 1&#10;12345 Musterstadt"></textarea>
+<label>Adresse</label>
+<textarea id="adresse"></textarea>
 
-    <h2>Mietzeitraum</h2>
+<h2>Mietzeitraum</h2>
 
-    <label>Anreise</label>
-    <input type="date" id="anreise" onchange="berechneNaechte()">
+<label>Anreise</label>
+<input type="date" id="anreise" onchange="berechneNaechte()">
 
-    <label>Abreise</label>
-    <input type="date" id="abreise" onchange="berechneNaechte()">
+<label>Abreise</label>
+<input type="date" id="abreise" onchange="berechneNaechte()">
 
-    <h2>Übernachtungen</h2>
+<h2>Übernachtungen</h2>
 
-    <div id="nachtListe"></div>
+<div id="nachtListe"></div>
 
-    <button type="button" onclick="nachtHinzufuegen()" style="margin-top:8px">
-      + Übernachtung hinzufügen
-    </button>
+<div class="sonderkondition">
+<label>Nächte zu Sonderkondition</label>
+<input type="number" id="sonderNaechte" value="0">
+<label>Preis pro Nacht</label>
+<input type="number" id="sonderPreis" value="0">
+</div>
 
-    <div class="sonderkondition" style="margin-top:12px">
-      <label>Sonderkonditionen (optional)</label>
-      <div style="display:flex;gap:10px;margin-top:6px">
-        <div style="flex:1">
-          <label>Nächte zu Sonderpreis</label>
-          <input type="number" id="sonderNaechte" value="0" min="0">
-        </div>
-        <div style="flex:1">
-          <label>Preis pro Nacht (€)</label>
-          <input type="number" id="sonderPreis" value="0" min="0" step="0.01">
-        </div>
-      </div>
-    </div>
+<button type="button" onclick="nachtHinzufuegen()">Übernachtung hinzufügen</button>
 
-    <h2>Weitere Positionen</h2>
+<h2>Weitere Positionen</h2>
 
-    <label>Haustier (€)</label>
-    <input type="number" id="haustier" value="0" min="0" step="0.01">
+<label>Haustier (€)</label>
+<input type="number" id="haustier" value="0">
 
-    <label>Endreinigung (€)</label>
-    <input type="number" id="reinigung" value="99" min="0" step="0.01">
+<label>Endreinigung (€)</label>
+<input type="number" id="reinigung" value="99">
 
-    <div class="action-buttons" style="margin-top:20px">
-      <button class="btn-primary" onclick="berechnen()">📄 Rechnung erstellen</button>
-    </div>
+<button onclick="berechnen()">Rechnung erstellen</button>
 
-  </div>
+</div>
 
-  <!-- ══════════════════════════════════════
-       INVOICE PREVIEW (matches PDF exactly)
-  ══════════════════════════════════════ -->
-  <div id="rechnung" style="display:none">
+<div id="rechnung">
 
-    <!-- Grey title -->
-    <div class="invoice-title">RECHNUNG</div>
+<div class="header">
+<div class="sender-block">
+<b>Wohnzeit-Köln</b><br>
+Murgweg 2<br>
+51061 Köln
+</div>
 
-    <!-- Sender address (blue, small) -->
-    <div class="sender-address">Wohnzeit-Köln | Murgweg 2, 51061 Köln</div>
+<div class="rechts invoice-meta">
+<b>RECHNUNG</b><br><br>
+Rechnungsnummer: <span id="r_nummer"></span><br>
+Rechnungsdatum: <span id="r_datum"></span>
+</div>
+</div>
 
-    <!-- Top section: customer left, meta right -->
-    <div class="invoice-top">
-      <div class="customer-block">
-        <div class="customer-label">Name</div>
-        <div class="customer-name-line" id="r_name"></div>
-        <div class="customer-label" style="margin-top:6px">Adresse</div>
-        <div class="customer-address-line" id="r_adresse" style="white-space:pre-line"></div>
-      </div>
-      <div class="invoice-meta-block">
-        <table>
-          <tr>
-            <td><strong>Rechnungsnummer:</strong></td>
-            <td><span id="r_nummer"></span></td>
-          </tr>
-          <tr>
-            <td><strong>Rechnungsdatum:</strong></td>
-            <td><span id="r_datum"></span></td>
-          </tr>
-          <tr>
-            <td><strong>Mietzeitraum:</strong></td>
-            <td><span id="zeitraum" style="white-space:pre-line"></span></td>
-          </tr>
-        </table>
-      </div>
-    </div>
+<div class="kunde">
+<div>
+<div class="sender-line">Wohnzeit-Köln, Murgweg 2, 51061 Köln</div>
+<div id="kundeAdresse" class="customer-address"></div>
+</div>
+<div class="rental-period">
+Mietzeitraum:<br>
+<span id="zeitraum"></span>
+</div>
+</div>
 
-    <!-- Date line (repeated, right-aligned, as in reference) -->
-    <div class="invoice-date-line" id="r_datum2"></div>
+<section class="invoice-copy intro-copy">
+<p id="anredeText"></p>
+<p id="buchungsDankText"></p>
+<p>Hiermit erlauben wir uns die folgenden Leistungen in Rechnung zu stellen:</p>
+</section>
 
-    <!-- Blue RECHNUNG heading -->
-    <div class="invoice-heading">RECHNUNG</div>
+<table>
+<thead>
+<tr>
+<th>Pos.</th>
+<th>Beschreibung</th>
+<th>Preis</th>
+<th>Gesamt</th>
+</tr>
+</thead>
+<tbody id="positionen"></tbody>
+</table>
 
-    <!-- Intro text -->
-    <div class="invoice-intro">
-      <p id="anredeText"></p>
-      <p id="buchungsDankText"></p>
-      <p>Hiermit erlauben wir uns die folgenden Leistungen in Rechnung zu stellen:</p>
-    </div>
+<div class="summen">
+<p>Kulturförderabgabe Stadt Köln: <span id="kultur"></span></p>
+<p>7 % UST inkl.: <span id="mwst"></span></p>
+<p>Netto: <span id="netto"></span></p>
+<h2>Gesamtsumme: <span id="gesamt"></span></h2>
+</div>
 
-    <!-- Positions table -->
-    <table class="positions">
-      <thead>
-        <tr>
-          <th style="width:36px">Pos.</th>
-          <th>Beschreibung</th>
-          <th style="width:110px; text-align:right">Bruttopreis</th>
-          <th style="width:110px; text-align:right">Gesamtpreis</th>
-        </tr>
-      </thead>
-      <tbody id="positionen"></tbody>
-    </table>
+<section class="invoice-copy closing-copy">
+<p><strong>Zahlungsbedingungen:</strong> Zahlung per sofort und ohne Abzüge.</p>
+<p>Bei Rückfragen stehen wir selbstverständlich jederzeit gerne zur Verfügung.</p>
+<p>Mit freundlichen Grüßen</p>
+<p>Sarah und David Brand</p>
+</section>
 
-    <!-- Summen block (appended below table, right-aligned) -->
-    <div class="summen-block">
-      <table>
-        <tr>
-          <td colspan="2" style="font-size:10pt; padding: 4px 8px; text-align:right; color:#555">
-            7 % UST inkl.
-          </td>
-          <td style="font-weight:700; text-align:right; padding: 4px 8px; min-width:110px">
-            <span id="r_ust"></span>
-          </td>
-        </tr>
-        <tr>
-          <td colspan="2" style="font-size:10pt; padding: 2px 8px; text-align:right; color:#555">
-            Netto
-          </td>
-          <td style="text-align:right; padding: 2px 8px">
-            <span id="r_netto"></span>
-          </td>
-        </tr>
-        <tr class="gesamt-row">
-          <td colspan="2" style="font-size:10.5pt; padding: 5px 8px; text-align:right; font-weight:700">
-            Gesamtsumme
-          </td>
-          <td style="font-weight:700; text-align:right; padding: 5px 8px">
-            <span id="r_gesamt"></span>
-          </td>
-        </tr>
-      </table>
-    </div>
+<footer class="invoice-footer" aria-label="Rechnungsfuß">
+<div class="footer-image" aria-hidden="true">
+<img src="assets/fussnote.svg" alt="">
+</div>
+<address class="footer-data" id="unternehmensdaten">
+<div class="footer-col">
+<strong>Wohnzeit-Köln</strong>
+<span>Murgweg 2</span>
+<span>51061 Köln</span>
+<span>Sarah und David Brand</span>
+</div>
+<div class="footer-col">
+<a href="tel:+491634734664">+49 163/4734664</a>
+<a href="mailto:brand-wohnzeit-koeln@gmx.de">brand-wohnzeit-koeln@gmx.de</a>
+</div>
+<div class="footer-col">
+<strong>Kreissparkasse Köln</strong>
+<span>DE96 3705 0299 0000 7168 73</span>
+<span>BIC: COKSDE33XXX</span>
+</div>
+<div class="footer-col">
+<strong>Steuernr.</strong>
+<span>218/5025/7499</span>
+</div>
+</address>
+</footer>
 
-    <!-- Closing text -->
-    <div class="invoice-closing">
-      <p><strong>Zahlungsbedingungen:</strong> Zahlung per sofort und ohne Abzüge.</p>
-      <p style="margin-top:10px">Bei Rückfragen stehen wir selbstverständlich jederzeit gerne zur Verfügung.</p>
-      <p style="margin-top:10px">Mit freundlichen Grüßen</p>
-      <p style="margin-top:6px">Sarah und David Brand</p>
-    </div>
+<button onclick="window.print()">PDF erstellen</button>
+<button onclick="erstelleZugferdPDF()">ZUGFeRD PDF erstellen</button>
+<button onclick="erstelleZugferdXML()">ZUGFeRD XML erstellen</button>
+<button onclick="erstelleXRechnungXML()">XRechnung XML erstellen</button>
 
-    <!-- ── Footer (matches Fussnote_ohne1.png exactly) ── -->
-    <footer class="invoice-footer">
+</div>
 
-      <!-- Icons row with double blue line -->
-      <div class="footer-icons-line">
-        <!-- House icon -->
-        <div class="footer-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 9.5L12 3l9 6.5"/>
-            <path d="M9 21V12h6v9"/>
-            <rect x="3" y="9.5" width="18" height="11.5" rx="0"/>
-            <path d="M3 9.5v11.5h18V9.5"/>
-          </svg>
-        </div>
-
-        <!-- Invoice/list icon -->
-        <div class="footer-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
-            <rect x="3" y="3" width="7" height="7" rx="1"/>
-            <line x1="13" y1="7" x2="20" y2="7"/>
-            <line x1="13" y1="11" x2="20" y2="11"/>
-            <line x1="7" y1="15" x2="20" y2="15"/>
-            <line x1="7" y1="19" x2="14" y2="19"/>
-          </svg>
-        </div>
-
-        <!-- Dollar/payment icon -->
-        <div class="footer-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 12A8 8 0 1 0 4 12"/>
-            <polyline points="4 6 4 12 10 12"/>
-            <text x="12" y="17" font-size="8" text-anchor="middle" fill="#333" stroke="none" font-family="Arial">$</text>
-          </svg>
-        </div>
-      </div>
-
-      <!-- Footer data: 4 columns, centered below icons -->
-      <address class="footer-data">
-        <div class="footer-col">
-          <strong>Wohnzeit-Köln</strong>
-          <span>Murgweg 2</span>
-          <span>51061 Köln</span>
-          <span>Sarah und David Brand</span>
-        </div>
-        <div class="footer-col">
-          <span>+49 163/4734664</span>
-          <span>brand-wohnzeit-koeln@gmx.de</span>
-        </div>
-        <div class="footer-col">
-          <strong>Kreissparkasse Köln</strong>
-          <span>DE96 3705 0299 0000 7168 73</span>
-          <span>BIC: COKSDE33XXX</span>
-        </div>
-        <div class="footer-col">
-          <strong>Steuernr.</strong>
-          <span>218/5025/7499</span>
-        </div>
-      </address>
-
-    </footer>
-
-    <!-- Action buttons (hidden in print) -->
-    <div class="action-buttons no-print" style="margin-top:20px">
-      <button class="btn-primary" onclick="druckenAlsPDF()">🖨 PDF erstellen</button>
-      <button class="btn-zugferd" onclick="erstelleZugferdPDF()">📎 ZUGFeRD PDF</button>
-      <button class="btn-xml" onclick="erstelleZugferdXML()">🗂 ZUGFeRD XML</button>
-      <button class="btn-xrechnung" onclick="erstelleXRechnungXML()">📋 XRechnung XML</button>
-    </div>
-
-  </div><!-- /rechnung -->
-
-</div><!-- /app -->
+</div>
 
 <script src="app.js"></script>
+
 <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js');
-  }
+if ('serviceWorker' in navigator) {
+navigator.serviceWorker.register('service-worker.js');
+}
 </script>
+
 </body>
 </html>
