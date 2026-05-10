@@ -1,290 +1,540 @@
-body{
-font-family:Arial, sans-serif;
-max-width:980px;
-margin:auto;
-padding:20px;
-color:#111;
-background:#f3f3f3;
+/* =============================================
+   BILLKILL — Wohnzeit Köln Invoice Generator
+   Design matches Rechnung_Beispiel reference
+   ============================================= */
+
+:root {
+  --blue-primary: #2980b9;
+  --blue-dark: #1a5c8a;
+  --blue-light: #d6eaf8;
+  --text-dark: #1a1a1a;
+  --text-mid: #444;
+  --text-light: #777;
+  --border: #ccc;
+  --page-bg: #e8e8e8;
+  --white: #ffffff;
+  --font-main: 'Segoe UI', Arial, Helvetica, sans-serif;
 }
 
-.app>h1{
-margin-left:10px;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-#rechnung{
-box-sizing:border-box;
-max-width:820px;
-min-height:1120px;
-margin:0 auto 30px;
-padding:52px 58px 230px;
-background:#fff;
-box-shadow:0 8px 28px rgba(0,0,0,.12);
-font-size:14px;
-line-height:1.45;
+body {
+  font-family: var(--font-main);
+  font-size: 11pt;
+  color: var(--text-dark);
+  background: var(--page-bg);
+  line-height: 1.4;
 }
 
-.header{
-display:flex;
-justify-content:space-between;
-gap:30px;
-margin-bottom:54px;
+/* ── App Shell ── */
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
-.sender-block{
-line-height:1.45;
+h1 {
+  font-size: 22px;
+  color: var(--blue-primary);
+  margin-bottom: 20px;
+  font-weight: 600;
 }
 
-.rechts{
-text-align:right;
+/* ── Input Form ── */
+.form {
+  background: var(--white);
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.invoice-meta b{
-font-size:25px;
-letter-spacing:0;
+.form h2 {
+  font-size: 14px;
+  color: var(--blue-primary);
+  margin: 20px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--blue-light);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.kunde{
-display:flex;
-justify-content:space-between;
-gap:30px;
-margin-bottom:46px;
+.form h2:first-child {
+  margin-top: 0;
 }
 
-.sender-line{
-font-size:10px;
-color:#666;
-margin-bottom:12px;
-text-decoration:underline;
+.form label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 10px 0 3px;
 }
 
-.customer-address{
-white-space:normal;
-line-height:1.5;
+.form input,
+.form select,
+.form textarea {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: var(--font-main);
+  color: var(--text-dark);
+  background: #fafafa;
+  transition: border-color 0.2s;
 }
 
-.rental-period{
-min-width:190px;
-text-align:right;
+.form input:focus,
+.form select:focus,
+.form textarea:focus {
+  outline: none;
+  border-color: var(--blue-primary);
+  background: #fff;
 }
 
-.invoice-copy{
-line-height:1.5;
+.form textarea {
+  height: 60px;
+  resize: vertical;
 }
 
-.invoice-copy p{
-margin:0 0 12px;
+.form button {
+  margin-top: 12px;
+  padding: 8px 18px;
+  background: var(--blue-primary);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.intro-copy{
-margin-bottom:26px;
+.form button:hover {
+  background: var(--blue-dark);
 }
 
-.closing-copy{
-margin-top:30px;
-font-size:15px;
-line-height:1.45;
+/* Night list items */
+.night-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  background: #f5f8fb;
+  border: 1px solid #dde;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
 }
 
-.closing-copy p{
-margin:0 0 18px;
+.night-item label {
+  margin: 0;
+  flex: 1;
+  text-transform: none;
+  font-size: 12px;
+  color: var(--text-dark);
 }
 
-.closing-copy p:first-child{
-font-size:12px;
-margin-bottom:76px;
+.night-item input {
+  width: 90px;
+  padding: 4px 6px;
 }
 
-table{
-width:100%;
-border-collapse:collapse;
-margin-top:20px;
+.night-item button.remove-btn {
+  margin: 0;
+  padding: 3px 8px;
+  font-size: 11px;
+  background: #e74c3c;
 }
 
-th,td{
-border-bottom:1px solid #d4d4d4;
-padding:9px 8px;
-text-align:left;
-vertical-align:top;
+.night-item button.remove-btn:hover {
+  background: #c0392b;
 }
 
-th{
-font-size:12px;
-font-weight:700;
-text-transform:uppercase;
-background:#f7f7f7;
+.sonderkondition {
+  background: #f0f8ff;
+  border: 1px solid #b8d8f0;
+  border-radius: 4px;
+  padding: 10px;
+  margin-top: 10px;
 }
 
-th:first-child,td:first-child{
-width:52px;
+/* Action buttons row */
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 20px;
 }
 
-th:nth-child(3),td:nth-child(3),
-th:nth-child(4),td:nth-child(4){
-text-align:right;
-white-space:nowrap;
+.action-buttons button {
+  padding: 9px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s, transform 0.1s;
 }
 
-.summen{
-text-align:right;
-margin-top:24px;
+.action-buttons button:active {
+  transform: scale(0.97);
 }
 
-.summen p{
-margin:4px 0;
+.btn-primary { background: var(--blue-primary); color: #fff; }
+.btn-primary:hover { background: var(--blue-dark); }
+.btn-zugferd { background: #27ae60; color: #fff; }
+.btn-zugferd:hover { background: #1e8449; }
+.btn-xml { background: #8e44ad; color: #fff; }
+.btn-xml:hover { background: #6c3483; }
+.btn-xrechnung { background: #e67e22; color: #fff; }
+.btn-xrechnung:hover { background: #ca6f1e; }
+
+/* ═══════════════════════════════════════════
+   RECHNUNG PREVIEW — matches PDF exactly
+   ═══════════════════════════════════════════ */
+
+#rechnung {
+  background: var(--white);
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto 30px;
+  padding: 20mm 20mm 15mm;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
-.summen h2{
-margin-top:12px;
-font-size:20px;
+/* ── Title ── */
+.invoice-title {
+  font-size: 36pt;
+  color: #c0c0c0;
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 16px;
+  line-height: 1;
 }
 
-.form{
-background:#fff;
-padding:20px;
-margin:0 auto 40px;
-border-radius:8px;
-box-shadow:0 4px 18px rgba(0,0,0,.08);
+/* ── Top meta block ── */
+.invoice-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  border-bottom: none;
 }
 
-.sonderkondition{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:0 18px;
-margin-top:8px;
+.sender-address {
+  font-size: 8.5pt;
+  color: var(--blue-primary);
+  font-weight: 600;
+  margin-bottom: 10px;
 }
 
-input,textarea,select{
-box-sizing:border-box;
-width:100%;
-padding:8px;
-margin-top:5px;
-margin-bottom:10px;
+.customer-block {
+  flex: 1;
 }
 
-textarea{
-min-height:90px;
+.customer-label {
+  font-size: 8pt;
+  color: var(--text-light);
+  margin-bottom: 2px;
 }
 
-button{
-padding:12px 20px;
-margin-top:20px;
-margin-right:10px;
+.customer-name-line {
+  font-size: 10pt;
+  color: var(--text-dark);
+  margin-bottom: 2px;
 }
 
-.invoice-footer{
-margin-top:102px;
-font-size:12px;
-line-height:1.35;
+.customer-address-line {
+  font-size: 10pt;
+  color: var(--text-dark);
 }
 
-.footer-image{
-text-align:center;
+.invoice-meta-block {
+  text-align: right;
+  min-width: 200px;
 }
 
-.footer-image img{
-display:block;
-width:100%;
-height:auto;
+.invoice-meta-block table {
+  margin-left: auto;
+  border-collapse: collapse;
 }
 
-.footer-data{
-display:grid;
-grid-template-columns:1.2fr 1.45fr 1.7fr 1fr;
-gap:18px;
-margin-top:2px;
-font-style:normal;
-text-align:center;
+.invoice-meta-block td {
+  font-size: 10pt;
+  padding: 1px 4px;
+  border: none;
 }
 
-.footer-col{
-display:flex;
-flex-direction:column;
-align-items:center;
-gap:2px;
-min-width:0;
+.invoice-meta-block td:first-child {
+  font-weight: 600;
+  color: var(--text-dark);
+  text-align: left;
 }
 
-.footer-col strong{
-font-weight:400;
+.invoice-meta-block td:last-child {
+  text-align: right;
 }
 
-.footer-data a{
-color:inherit;
-text-decoration:none;
+/* Date line below customer block */
+.invoice-date-line {
+  text-align: right;
+  font-size: 10pt;
+  margin-bottom: 16px;
 }
 
-@media (max-width:700px){
-body{
-padding:10px;
+/* ── RECHNUNG heading (blue) ── */
+.invoice-heading {
+  color: var(--blue-primary);
+  font-size: 14pt;
+  font-weight: 700;
+  margin-bottom: 14px;
 }
 
-#rechnung{
-padding:32px 24px 230px;
-min-height:auto;
+/* ── Intro text ── */
+.invoice-intro p {
+  font-size: 10pt;
+  margin-bottom: 6px;
 }
 
-.header,.kunde{
-display:block;
+/* ── Positions table ── */
+table.positions {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  margin-bottom: 0;
+  font-size: 10pt;
 }
 
-.rechts,.rental-period{
-text-align:left;
-margin-top:24px;
+table.positions thead tr {
+  background: var(--blue-primary);
+  color: var(--white);
 }
 
-.sonderkondition{
-grid-template-columns:1fr;
+table.positions thead th {
+  padding: 6px 8px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 10pt;
 }
 
-.footer-data{
-grid-template-columns:1fr;
-}
-}
-
-@media print{
-body{
-max-width:none;
-margin:0;
-padding:0;
-background:#fff;
+table.positions thead th:last-child,
+table.positions thead th:nth-child(3) {
+  text-align: right;
 }
 
-.app>h1{display:none;}
-.form{display:none;}
-button{display:none;}
-
-#rechnung{
-max-width:none;
-min-height:auto;
-margin:0;
-padding:5mm 4mm 40mm;
-box-shadow:none;
-font-size:12pt;
+table.positions tbody tr {
+  border-bottom: 1px solid #e0e0e0;
 }
 
-.closing-copy{
-font-size:15pt;
+table.positions tbody tr:last-child {
+  border-bottom: 1px solid #999;
 }
 
-.closing-copy p:first-child{
-font-size:10pt;
-margin-bottom:21mm;
+table.positions tbody td {
+  padding: 5px 8px;
+  font-size: 10pt;
+  vertical-align: top;
 }
 
-.invoice-footer{
-position:fixed;
-bottom:4mm;
-left:4mm;
-right:4mm;
-margin:0;
-background:#fff;
-font-size:12pt;
-line-height:1.2;
+table.positions tbody td:first-child {
+  width: 36px;
+  color: var(--text-mid);
 }
 
-.footer-data{
-grid-template-columns:1.2fr 1.45fr 1.7fr 1fr;
-gap:8mm;
-margin-top:1mm;
+table.positions tbody td:nth-child(3),
+table.positions tbody td:last-child {
+  text-align: right;
+  white-space: nowrap;
 }
+
+/* Sub-totals within positions (Kulturförderabgabe, Endreinigung) */
+table.positions .subtotal-row td {
+  padding: 4px 8px;
+  border-bottom: none;
+  font-size: 10pt;
+}
+
+table.positions .subtotal-row td:last-child {
+  text-align: right;
+}
+
+/* ── Summen block ── */
+.summen-block {
+  width: 100%;
+  margin-top: 0;
+}
+
+.summen-block table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.summen-block tr td {
+  padding: 3px 8px;
+  font-size: 10pt;
+  text-align: right;
+}
+
+.summen-block .ust-row td {
+  font-weight: 700;
+}
+
+.summen-block .gesamt-row {
+  background: var(--blue-primary);
+  color: var(--white);
+}
+
+.summen-block .gesamt-row td {
+  font-weight: 700;
+  font-size: 10.5pt;
+}
+
+/* ── Closing text ── */
+.invoice-closing {
+  margin-top: 18px;
+  flex: 1;
+}
+
+.invoice-closing p {
+  font-size: 10pt;
+  margin-bottom: 5px;
+}
+
+/* ── Footer ── */
+.invoice-footer {
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+/* Icons row + double blue line below */
+.footer-icons-line {
+  width: 100%;
+  position: relative;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding-bottom: 8px;
+  margin-bottom: 0;
+}
+
+.footer-icons-line::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-bottom: 3px solid var(--blue-primary);
+  box-shadow: 0 4px 0 0 #1a3a5c;
+}
+
+.footer-icon {
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid #333;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.footer-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Data columns below icons */
+.footer-data {
+  display: flex;
+  justify-content: space-around;
+  font-size: 8pt;
+  color: var(--text-dark);
+  font-style: normal;
+  margin-top: 6px;
+}
+
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1px;
+  flex: 1;
+}
+
+.footer-col a {
+  color: var(--text-dark);
+  text-decoration: none;
+}
+
+/* ═══════════════════════════════════════════
+   PRINT STYLES — must match preview exactly
+   ═══════════════════════════════════════════ */
+
+@media print {
+  body {
+    background: white;
+    margin: 0;
+    padding: 0;
+  }
+
+  .app > h1,
+  .form,
+  .action-buttons,
+  .no-print {
+    display: none !important;
+  }
+
+  #rechnung {
+    box-shadow: none;
+    margin: 0;
+    padding: 15mm 20mm 12mm;
+    width: 210mm;
+    min-height: 297mm;
+    page-break-after: avoid;
+  }
+
+  table.positions {
+    page-break-inside: avoid;
+  }
+
+  .invoice-footer {
+    position: fixed;
+    bottom: 12mm;
+    left: 20mm;
+    right: 20mm;
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  #rechnung {
+    width: 100%;
+    min-height: auto;
+    padding: 15px;
+  }
+
+  .invoice-top {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .invoice-meta-block {
+    text-align: left;
+    min-width: unset;
+  }
+
+  .footer-data {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }

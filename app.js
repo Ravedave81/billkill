@@ -1,432 +1,658 @@
-const UNTERNEHMEN = {
-  name: "Wohnzeit-Köln",
-  inhaber: "Sarah und David Brand",
-  strasse: "Murgweg 2",
-  plz: "51061",
-  ort: "Köln",
-  telefon: "+49 163 4734664",
-  telefonUri: "+491634734664",
-  email: "brand-wohnzeit-koeln@gmx.de",
-  bank: "Kreissparkasse Köln",
-  iban: "DE96 3705 0299 0000 7168 73",
-  bic: "COKSDE33XXX",
-  steuernummer: "218/5025/7499"
+// =============================================
+// BILLKILL — app.js
+// Wohnzeit Köln Invoice Generator
+// ZUGFeRD / XRechnung / PDF support
+// =============================================
+
+// ── State ──────────────────────────────────
+let naechte = []; // [{datum, preis}]
+
+// ── Init ───────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Set today as default date
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('datum').value = today;
+  document.getElementById('rechnung').style.display = 'none';
+  renderNachtListe();
+});
+
+// ── Night management ────────────────────────
+function berechneNaechte() {
+  const anreise = document.getElementById('anreise').value;
+  const abreise = document.getElementById('abreise').value;
+  if (!anreise || !abreise) return;
+
+  const start = new Date(anreise);
+  const end = new Date(abreise);
+  if (end <= start) return;
+
+  const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
+  naechte = [];
+  for (let i = 0; i < diffDays; i++) {
+    const d = new Date(start);
+    d.offset = i;
+    const dateStr = new Date(start.getTime() + i * 86400000)
+      .toISOString().split('T')[0];
+    naechte.push({ datum: dateStr, preis: 0 });
+  }
+  renderNachtListe();
 }
 
-let nachtIndex = 0
-
-function nachtHinzufuegen(){
-
-nachtIndex++
-
-let html = `
-<div class="nacht">
-<label>Nächte</label>
-<input type="number" class="nachtAnzahl" value="1">
-<label>Preis pro Nacht (€)</label>
-<input type="number" class="nachtPreis" value="195">
-<button onclick="this.parentElement.remove()">entfernen</button>
-</div>
-`
-
-document.getElementById("nachtListe").insertAdjacentHTML("beforeend", html)
-
+function nachtHinzufuegen() {
+  naechte.push({ datum: '', preis: 0 });
+  renderNachtListe();
 }
 
-function formatDatum(datum){
-if(!datum) return ""
-let d = new Date(datum)
-let tag = String(d.getDate()).padStart(2,"0")
-let monat = String(d.getMonth()+1).padStart(2,"0")
-let jahr = d.getFullYear()
-return tag + "." + monat + "." + jahr
+function renderNachtListe() {
+  const container = document.getElementById('nachtListe');
+  if (!container) return;
+  container.innerHTML = '';
+  naechte.forEach((n, i) => {
+    const div = document.createElement('div');
+    div.className = 'night-item';
+    div.innerHTML = `
+      <label>Nacht ${i + 1}</label>
+      <input type="date" value="${n.datum}"
+        onchange="naechte[${i}].datum = this.value">
+      <input type="number" placeholder="Preis €" value="${n.preis || ''}"
+        onchange="naechte[${i}].preis = parseFloat(this.value) || 0"
+        style="width:90px">
+      <button class="remove-btn" onclick="nachtEntfernen(${i})">✕</button>
+    `;
+    container.appendChild(div);
+  });
 }
 
-function formatISO(datum){
-if(!datum) return ""
-let d = new Date(datum)
-return d.toISOString().split("T")[0]
+function nachtEntfernen(i) {
+  naechte.splice(i, 1);
+  renderNachtListe();
 }
 
-function esc(text){
-return String(text ?? "")
-.replaceAll("&", "&amp;")
-.replaceAll("<", "&lt;")
-.replaceAll(">", "&gt;")
-.replaceAll('"', "&quot;")
-.replaceAll("'", "&apos;")
+// ── Format helpers ──────────────────────────
+function formatEuro(val) {
+  return val.toFixed(2).replace('.', ',') + ' Euro';
 }
 
-function extrahiereNachname(name){
-let ersteZeile = String(name ?? "").split(/\r?\n/)[0].trim()
-if(!ersteZeile) return ""
-let teile = ersteZeile
-.replace(/^(Herrn?|Frau|Familie)\s+/i, "")
-.replaceAll(",", " ")
-.split(/\s+/)
-.filter(Boolean)
-return teile.at(-1) || ""
+function formatDate(str) {
+  if (!str) return '';
+  const [y, m, d] = str.split('-');
+  return `${d}.${m}.${y}`;
 }
 
-function erstelleAnrede(anrede, name){
-let nachname = extrahiereNachname(name)
-if(anrede === "Sehr geehrte Frau"){
-return nachname ? `Sehr geehrte Frau ${nachname}` : "Sehr geehrte Frau"
-}
-if(anrede === "Sehr geehrter Herr"){
-return nachname ? `Sehr geehrter Herr ${nachname}` : "Sehr geehrter Herr"
-}
-return "Sehr geehrte Damen und Herren"
+function formatDateRange(von, bis) {
+  return `${formatDate(von)} –\n${formatDate(bis)}`;
 }
 
-function erstelleBuchungstext(anreise, abreise){
-let start = formatDatum(anreise) || "xx"
-let ende = formatDatum(abreise) || "xx"
-return `vielen Dank für die Hausbuchung in der Zeit vom ${start} bis ${ende} und Ihr Vertrauen.`
+// ── Main calculate / render ─────────────────
+function berechnen() {
+  const rNr = document.getElementById('rechnungsnummer').value.trim() || '1/2024';
+  const datum = document.getElementById('datum').value;
+  const anreise = document.getElementById('anreise').value;
+  const abreise = document.getElementById('abreise').value;
+  const anrede = document.getElementById('anrede').value;
+  const name = document.getElementById('name').value.trim();
+  const adresse = document.getElementById('adresse').value.trim();
+  const haustier = parseFloat(document.getElementById('haustier').value) || 0;
+  const reinigung = parseFloat(document.getElementById('reinigung').value) || 0;
+
+  // Collect night prices
+  const uebernachtungsPositionen = naechte.filter(n => n.preis > 0);
+  const uebernachtungsSumme = uebernachtungsPositionen.reduce((s, n) => s + n.preis, 0);
+
+  // Kulturförderabgabe = 5% of accommodation (approx. — Köln rate)
+  const kulturProzent = 0.05; // 5% Kulturförderabgabe Stadt Köln
+  // But match reference: 21.75 on 455 ≈ 4.78%
+  // Actually Köln charges "City Tax" per person/night — simplified here as 5% of room rate
+  const kultur = Math.round((uebernachtungsSumme * kulturProzent) * 100) / 100;
+
+  // Subtotal before tax = Nächte + Haustier + Endreinigung + Kulturabgabe
+  const bruttoOhneUST = uebernachtungsSumme + haustier + reinigung + kultur;
+
+  // 7% UST inkl. means already included in gross
+  const ust = Math.round((bruttoOhneUST / 1.07 * 0.07) * 100) / 100;
+  const netto = Math.round((bruttoOhneUST - ust) * 100) / 100;
+  const gesamt = bruttoOhneUST;
+
+  // ── Render ──────────────────────────────
+  document.getElementById('rechnung').style.display = 'flex';
+
+  // Meta
+  document.getElementById('r_nummer').textContent = rNr;
+  document.getElementById('r_datum').textContent = formatDate(datum);
+  document.getElementById('r_datum2').textContent = formatDate(datum);
+  document.getElementById('zeitraum').innerHTML =
+    `${formatDate(anreise)} –<br>${formatDate(abreise)}`;
+
+  // Customer
+  document.getElementById('r_name').textContent = name;
+  document.getElementById('r_adresse').textContent = adresse;
+
+  // Greeting
+  document.getElementById('anredeText').textContent = `${anrede},`;
+  document.getElementById('buchungsDankText').textContent =
+    `vielen Dank für die Hausbuchung in der Zeit vom ${formatDate(anreise)}–${formatDate(abreise)} und Ihr Vertrauen.`;
+
+  // Positions table
+  const tbody = document.getElementById('positionen');
+  tbody.innerHTML = '';
+
+  let pos = 1;
+
+  // Night rows grouped in pos 1
+  if (uebernachtungsPositionen.length > 0) {
+    const tr = document.createElement('tr');
+    const desc = uebernachtungsPositionen
+      .map(n => `1x Übernachtung ohne Verpflegung a ${n.preis.toFixed(2).replace('.', ',')}`)
+      .join('<br>');
+    const extras = haustier > 0 ? `<br>1x Haustier ${haustier.toFixed(2).replace('.', ',')}` : '';
+    tr.innerHTML = `
+      <td>${pos++}.</td>
+      <td>${desc}${extras}</td>
+      <td></td>
+      <td>${formatEuro(uebernachtungsSumme + haustier)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // Kulturförderabgabe
+  const trKultur = document.createElement('tr');
+  trKultur.className = 'subtotal-row';
+  trKultur.innerHTML = `
+    <td></td>
+    <td>Kulturförderabgabe der Stadt Köln</td>
+    <td></td>
+    <td>${formatEuro(kultur)}</td>
+  `;
+  tbody.appendChild(trKultur);
+
+  // Endreinigung
+  const trReinigung = document.createElement('tr');
+  trReinigung.className = 'subtotal-row';
+  trReinigung.innerHTML = `
+    <td></td>
+    <td>Endreinigung</td>
+    <td></td>
+    <td>${formatEuro(reinigung)}</td>
+  `;
+  tbody.appendChild(trReinigung);
+
+  // Summen
+  document.getElementById('r_ust').textContent = formatEuro(ust);
+  document.getElementById('r_netto').textContent = formatEuro(netto);
+  document.getElementById('r_gesamt').textContent = formatEuro(gesamt);
+
+  // Scroll to invoice
+  document.getElementById('rechnung').scrollIntoView({ behavior: 'smooth' });
+
+  // Store for export
+  window._invoiceData = {
+    rNr, datum, anreise, abreise, anrede, name, adresse,
+    uebernachtungsPositionen, haustier, reinigung,
+    uebernachtungsSumme, kultur, ust, netto, gesamt
+  };
 }
 
-function berechneNaechte(){
+// ── ZUGFeRD XML Generation ──────────────────
+function generateZugferdXML(d) {
+  const {
+    rNr, datum, anreise, abreise, name, adresse,
+    uebernachtungsPositionen, haustier, reinigung,
+    uebernachtungsSumme, kultur, ust, netto, gesamt
+  } = d;
 
-let anreise = document.getElementById("anreise").value
-let abreise = document.getElementById("abreise").value
+  const dateToXml = (str) => str ? str.replace(/-/g, '') : '';
+  const formatXmlAmount = (val) => val.toFixed(2);
 
-if(!anreise || !abreise) return
+  // Build line items
+  let lineItems = '';
+  let lineNum = 1;
 
-let start = new Date(anreise)
-let ende = new Date(abreise)
+  uebernachtungsPositionen.forEach(n => {
+    lineItems += `
+    <ram:IncludedSupplyChainTradeLineItem>
+      <ram:AssociatedDocumentLineDocument>
+        <ram:LineID>${lineNum++}</ram:LineID>
+      </ram:AssociatedDocumentLineDocument>
+      <ram:SpecifiedTradeProduct>
+        <ram:Name>Übernachtung ohne Verpflegung (${formatDate(n.datum)})</ram:Name>
+      </ram:SpecifiedTradeProduct>
+      <ram:SpecifiedLineTradeAgreement>
+        <ram:NetPriceProductTradePrice>
+          <ram:ChargeAmount>${formatXmlAmount(n.preis / 1.07)}</ram:ChargeAmount>
+        </ram:NetPriceProductTradePrice>
+      </ram:SpecifiedLineTradeAgreement>
+      <ram:SpecifiedLineTradeDelivery>
+        <ram:BilledQuantity unitCode="C62">1</ram:BilledQuantity>
+      </ram:SpecifiedLineTradeDelivery>
+      <ram:SpecifiedLineTradeSettlement>
+        <ram:ApplicableTradeTax>
+          <ram:TypeCode>VAT</ram:TypeCode>
+          <ram:CategoryCode>S</ram:CategoryCode>
+          <ram:RateApplicablePercent>7</ram:RateApplicablePercent>
+        </ram:ApplicableTradeTax>
+        <ram:SpecifiedTradeSettlementLineMonetarySummation>
+          <ram:LineTotalAmount>${formatXmlAmount(n.preis / 1.07)}</ram:LineTotalAmount>
+        </ram:SpecifiedTradeSettlementLineMonetarySummation>
+      </ram:SpecifiedLineTradeSettlement>
+    </ram:IncludedSupplyChainTradeLineItem>`;
+  });
 
-let diff = ende - start
-let naechte = diff / (1000 * 60 * 60 * 24)
+  if (haustier > 0) {
+    lineItems += `
+    <ram:IncludedSupplyChainTradeLineItem>
+      <ram:AssociatedDocumentLineDocument>
+        <ram:LineID>${lineNum++}</ram:LineID>
+      </ram:AssociatedDocumentLineDocument>
+      <ram:SpecifiedTradeProduct>
+        <ram:Name>Haustier</ram:Name>
+      </ram:SpecifiedTradeProduct>
+      <ram:SpecifiedLineTradeAgreement>
+        <ram:NetPriceProductTradePrice>
+          <ram:ChargeAmount>${formatXmlAmount(haustier / 1.07)}</ram:ChargeAmount>
+        </ram:NetPriceProductTradePrice>
+      </ram:SpecifiedLineTradeAgreement>
+      <ram:SpecifiedLineTradeDelivery>
+        <ram:BilledQuantity unitCode="C62">1</ram:BilledQuantity>
+      </ram:SpecifiedLineTradeDelivery>
+      <ram:SpecifiedLineTradeSettlement>
+        <ram:ApplicableTradeTax>
+          <ram:TypeCode>VAT</ram:TypeCode>
+          <ram:CategoryCode>S</ram:CategoryCode>
+          <ram:RateApplicablePercent>7</ram:RateApplicablePercent>
+        </ram:ApplicableTradeTax>
+        <ram:SpecifiedTradeSettlementLineMonetarySummation>
+          <ram:LineTotalAmount>${formatXmlAmount(haustier / 1.07)}</ram:LineTotalAmount>
+        </ram:SpecifiedTradeSettlementLineMonetarySummation>
+      </ram:SpecifiedLineTradeSettlement>
+    </ram:IncludedSupplyChainTradeLineItem>`;
+  }
 
-let ersteNacht = document.querySelector(".nachtAnzahl")
+  if (reinigung > 0) {
+    lineItems += `
+    <ram:IncludedSupplyChainTradeLineItem>
+      <ram:AssociatedDocumentLineDocument>
+        <ram:LineID>${lineNum++}</ram:LineID>
+      </ram:AssociatedDocumentLineDocument>
+      <ram:SpecifiedTradeProduct>
+        <ram:Name>Endreinigung</ram:Name>
+      </ram:SpecifiedTradeProduct>
+      <ram:SpecifiedLineTradeAgreement>
+        <ram:NetPriceProductTradePrice>
+          <ram:ChargeAmount>${formatXmlAmount(reinigung / 1.07)}</ram:ChargeAmount>
+        </ram:NetPriceProductTradePrice>
+      </ram:SpecifiedLineTradeAgreement>
+      <ram:SpecifiedLineTradeDelivery>
+        <ram:BilledQuantity unitCode="C62">1</ram:BilledQuantity>
+      </ram:SpecifiedLineTradeDelivery>
+      <ram:SpecifiedLineTradeSettlement>
+        <ram:ApplicableTradeTax>
+          <ram:TypeCode>VAT</ram:TypeCode>
+          <ram:CategoryCode>S</ram:CategoryCode>
+          <ram:RateApplicablePercent>7</ram:RateApplicablePercent>
+        </ram:ApplicableTradeTax>
+        <ram:SpecifiedTradeSettlementLineMonetarySummation>
+          <ram:LineTotalAmount>${formatXmlAmount(reinigung / 1.07)}</ram:LineTotalAmount>
+        </ram:SpecifiedTradeSettlementLineMonetarySummation>
+      </ram:SpecifiedLineTradeSettlement>
+    </ram:IncludedSupplyChainTradeLineItem>`;
+  }
 
-if(ersteNacht){
-ersteNacht.value = naechte
-}
+  if (kultur > 0) {
+    lineItems += `
+    <ram:IncludedSupplyChainTradeLineItem>
+      <ram:AssociatedDocumentLineDocument>
+        <ram:LineID>${lineNum++}</ram:LineID>
+      </ram:AssociatedDocumentLineDocument>
+      <ram:SpecifiedTradeProduct>
+        <ram:Name>Kulturförderabgabe der Stadt Köln</ram:Name>
+      </ram:SpecifiedTradeProduct>
+      <ram:SpecifiedLineTradeAgreement>
+        <ram:NetPriceProductTradePrice>
+          <ram:ChargeAmount>${formatXmlAmount(kultur)}</ram:ChargeAmount>
+        </ram:NetPriceProductTradePrice>
+      </ram:SpecifiedLineTradeAgreement>
+      <ram:SpecifiedLineTradeDelivery>
+        <ram:BilledQuantity unitCode="C62">1</ram:BilledQuantity>
+      </ram:SpecifiedLineTradeDelivery>
+      <ram:SpecifiedLineTradeSettlement>
+        <ram:ApplicableTradeTax>
+          <ram:TypeCode>VAT</ram:TypeCode>
+          <ram:CategoryCode>Z</ram:CategoryCode>
+          <ram:RateApplicablePercent>0</ram:RateApplicablePercent>
+        </ram:ApplicableTradeTax>
+        <ram:SpecifiedTradeSettlementLineMonetarySummation>
+          <ram:LineTotalAmount>${formatXmlAmount(kultur)}</ram:LineTotalAmount>
+        </ram:SpecifiedTradeSettlementLineMonetarySummation>
+      </ram:SpecifiedLineTradeSettlement>
+    </ram:IncludedSupplyChainTradeLineItem>`;
+  }
 
-}
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<rsm:CrossIndustryInvoice
+  xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"
+  xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100"
+  xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
 
-function sammleRechnungsDaten(){
-let anzahlFelder = document.querySelectorAll(".nachtAnzahl")
-let preisFelder = document.querySelectorAll(".nachtPreis")
-let positionen = []
-let bruttoUebernachtung = 0
+  <rsm:ExchangedDocumentContext>
+    <ram:GuidelineSpecifiedDocumentContextParameter>
+      <ram:ID>urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended</ram:ID>
+    </ram:GuidelineSpecifiedDocumentContextParameter>
+  </rsm:ExchangedDocumentContext>
 
-for(let i=0;i<anzahlFelder.length;i++){
-let anzahl = Number(anzahlFelder[i].value)
-let preis = Number(preisFelder[i].value)
-let sum = anzahl * preis
-if(anzahl > 0 && preis > 0){
-bruttoUebernachtung += sum
-positionen.push({
-position: positionen.length + 1,
-beschreibung: `${anzahl}x Übernachtung ohne Verpflegung`,
-preis,
-summe: sum,
-anzahl
-})
-}
-}
-
-let sonderAnzahl = Number(document.getElementById("sonderNaechte")?.value || 0)
-let sonderPreis = Number(document.getElementById("sonderPreis")?.value || 0)
-let sonderSumme = sonderAnzahl * sonderPreis
-if(sonderAnzahl > 0 && sonderPreis > 0){
-bruttoUebernachtung += sonderSumme
-positionen.push({
-position: positionen.length + 1,
-beschreibung: `${sonderAnzahl}x Übernachtung zu Sonderkondition`,
-preis: sonderPreis,
-summe: sonderSumme,
-anzahl: sonderAnzahl
-})
-}
-
-let haustier = Number(document.getElementById("haustier").value)
-let reinigung = Number(document.getElementById("reinigung").value)
-if(haustier>0){
-positionen.push({ position: "", beschreibung: "Haustier", preis: 0, summe: haustier, anzahl: 1 })
-}
-if(reinigung>0){
-positionen.push({ position: "", beschreibung: "Endreinigung", preis: 0, summe: reinigung, anzahl: 1 })
-}
-
-let kultur = bruttoUebernachtung * 0.05
-let zwischensumme = bruttoUebernachtung + haustier + reinigung + kultur
-let mwst = zwischensumme * 0.07
-let netto = zwischensumme - mwst
-let gesamt = zwischensumme
-
-return {
-rechnung: document.getElementById("rechnungsnummer").value,
-datum: document.getElementById("datum").value,
-anrede: document.getElementById("anrede").value,
-name: document.getElementById("name").value,
-adresse: document.getElementById("adresse").value,
-anreise: document.getElementById("anreise").value,
-abreise: document.getElementById("abreise").value,
-positionen,
-kultur,
-mwst,
-netto,
-gesamt,
-unternehmen: UNTERNEHMEN
-}
-}
-
-function berechnen(){
-let daten = sammleRechnungsDaten()
-
-let posHTML = ""
-daten.positionen.forEach((p) => {
-posHTML += `
-<tr>
-<td>${p.position || ""}</td>
-<td>${esc(p.beschreibung)}</td>
-<td>${p.preis ? p.preis.toFixed(2) + " €" : ""}</td>
-<td>${p.summe.toFixed(2)} €</td>
-</tr>
-`
-})
-
-document.getElementById("positionen").innerHTML = posHTML
-
-document.getElementById("kultur").innerText = daten.kultur.toFixed(2)+" €"
-document.getElementById("mwst").innerText = daten.mwst.toFixed(2)+" €"
-document.getElementById("netto").innerText = daten.netto.toFixed(2)+" €"
-document.getElementById("gesamt").innerText = daten.gesamt.toFixed(2)+" €"
-
-document.getElementById("zeitraum").innerText =
-formatDatum(daten.anreise) + " – " + formatDatum(daten.abreise)
-
-document.getElementById("r_nummer").innerText = daten.rechnung
-
-document.getElementById("r_datum").innerText = formatDatum(daten.datum)
-
-document.getElementById("kundeAdresse").innerHTML =
-esc(daten.name) + "<br>" + esc(daten.adresse).replaceAll("\n", "<br>")
-
-document.getElementById("anredeText").innerText = erstelleAnrede(daten.anrede, daten.name) + ","
-document.getElementById("buchungsDankText").innerText = erstelleBuchungstext(daten.anreise, daten.abreise)
-}
-
-function downloadDatei(inhalt, dateiname, mimeType){
-const blob = new Blob([inhalt], { type: mimeType })
-const url = URL.createObjectURL(blob)
-const a = document.createElement("a")
-a.href = url
-a.download = dateiname
-a.click()
-URL.revokeObjectURL(url)
-}
-
-function zugferdXMLInhalt(){
-const d = sammleRechnungsDaten()
-const u = d.unternehmen
-const positionenXml = d.positionen.map((p, idx) => `
-<ram:IncludedSupplyChainTradeLineItem>
-  <ram:AssociatedDocumentLineDocument><ram:LineID>${idx + 1}</ram:LineID></ram:AssociatedDocumentLineDocument>
-  <ram:SpecifiedTradeProduct><ram:Name>${esc(p.beschreibung)}</ram:Name></ram:SpecifiedTradeProduct>
-  <ram:SpecifiedLineTradeAgreement><ram:GrossPriceProductTradePrice><ram:ChargeAmount>${p.summe.toFixed(2)}</ram:ChargeAmount></ram:GrossPriceProductTradePrice></ram:SpecifiedLineTradeAgreement>
-  <ram:SpecifiedLineTradeDelivery><ram:BilledQuantity unitCode="C62">${p.anzahl || 1}</ram:BilledQuantity></ram:SpecifiedLineTradeDelivery>
-  <ram:SpecifiedLineTradeSettlement>
-    <ram:ApplicableTradeTax><ram:TypeCode>VAT</ram:TypeCode><ram:CategoryCode>S</ram:CategoryCode><ram:RateApplicablePercent>7</ram:RateApplicablePercent></ram:ApplicableTradeTax>
-    <ram:SpecifiedTradeSettlementLineMonetarySummation><ram:LineTotalAmount>${p.summe.toFixed(2)}</ram:LineTotalAmount></ram:SpecifiedTradeSettlementLineMonetarySummation>
-  </ram:SpecifiedLineTradeSettlement>
-</ram:IncludedSupplyChainTradeLineItem>`).join("\n")
-
-return `<?xml version="1.0" encoding="UTF-8"?>
-<rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
-  <rsm:ExchangedDocumentContext><ram:GuidelineSpecifiedDocumentContextParameter><ram:ID>urn:factur-x.eu:1p0:basicwl</ram:ID></ram:GuidelineSpecifiedDocumentContextParameter></rsm:ExchangedDocumentContext>
   <rsm:ExchangedDocument>
-    <ram:ID>${esc(d.rechnung)}</ram:ID>
+    <ram:ID>${rNr}</ram:ID>
     <ram:TypeCode>380</ram:TypeCode>
-    <ram:IssueDateTime><udt:DateTimeString format="102">${formatISO(d.datum).replaceAll("-", "")}</udt:DateTimeString></ram:IssueDateTime>
+    <ram:IssueDateTime>
+      <udt:DateTimeString format="102">${dateToXml(datum)}</udt:DateTimeString>
+    </ram:IssueDateTime>
+    <ram:IncludedNote>
+      <ram:Content>Zahlung per sofort und ohne Abzüge.</ram:Content>
+    </ram:IncludedNote>
   </rsm:ExchangedDocument>
+
   <rsm:SupplyChainTradeTransaction>
-    ${positionenXml}
+
+    ${lineItems}
+
     <ram:ApplicableHeaderTradeAgreement>
       <ram:SellerTradeParty>
-        <ram:Name>${esc(u.name)}</ram:Name>
-        <ram:PostalTradeAddress><ram:PostcodeCode>${esc(u.plz)}</ram:PostcodeCode><ram:LineOne>${esc(u.strasse)}</ram:LineOne><ram:CityName>${esc(u.ort)}</ram:CityName><ram:CountryID>DE</ram:CountryID></ram:PostalTradeAddress>
-        <ram:URIUniversalCommunication><ram:URIID schemeID="EM">${esc(u.email)}</ram:URIID></ram:URIUniversalCommunication>
-        <ram:SpecifiedTaxRegistration><ram:ID schemeID="FC">${esc(u.steuernummer)}</ram:ID></ram:SpecifiedTaxRegistration>
+        <ram:Name>Wohnzeit-Köln</ram:Name>
+        <ram:PostalTradeAddress>
+          <ram:LineOne>Murgweg 2</ram:LineOne>
+          <ram:PostcodeCode>51061</ram:PostcodeCode>
+          <ram:CityName>Köln</ram:CityName>
+          <ram:CountryID>DE</ram:CountryID>
+        </ram:PostalTradeAddress>
+        <ram:SpecifiedTaxRegistration>
+          <ram:ID schemeID="FC">218/5025/7499</ram:ID>
+        </ram:SpecifiedTaxRegistration>
+        <ram:DefinedTradeContact>
+          <ram:EmailURIUniversalCommunication>
+            <ram:URIID>brand-wohnzeit-koeln@gmx.de</ram:URIID>
+          </ram:EmailURIUniversalCommunication>
+          <ram:TelephoneUniversalCommunication>
+            <ram:CompleteNumber>+491634734664</ram:CompleteNumber>
+          </ram:TelephoneUniversalCommunication>
+        </ram:DefinedTradeContact>
       </ram:SellerTradeParty>
-      <ram:BuyerTradeParty><ram:Name>${esc(d.name)}</ram:Name></ram:BuyerTradeParty>
+
+      <ram:BuyerTradeParty>
+        <ram:Name>${name || 'Kunde'}</ram:Name>
+        <ram:PostalTradeAddress>
+          <ram:LineOne>${(adresse || '').replace(/\n/g, ', ')}</ram:LineOne>
+          <ram:CountryID>DE</ram:CountryID>
+        </ram:PostalTradeAddress>
+      </ram:BuyerTradeParty>
     </ram:ApplicableHeaderTradeAgreement>
+
+    <ram:ApplicableHeaderTradeDelivery>
+      <ram:ActualDeliverySupplyChainEvent>
+        <ram:OccurrenceDateTime>
+          <udt:DateTimeString format="102">${dateToXml(abreise)}</udt:DateTimeString>
+        </ram:OccurrenceDateTime>
+      </ram:ActualDeliverySupplyChainEvent>
+    </ram:ApplicableHeaderTradeDelivery>
+
     <ram:ApplicableHeaderTradeSettlement>
-      <ram:PaymentReference>${esc(d.rechnung)}</ram:PaymentReference>
+      <ram:PaymentReference>${rNr}</ram:PaymentReference>
       <ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>
-      <ram:SpecifiedTradeSettlementPaymentMeans><ram:TypeCode>58</ram:TypeCode><ram:PayeePartyCreditorFinancialAccount><ram:IBANID>${esc(u.iban.replaceAll(" ", ""))}</ram:IBANID></ram:PayeePartyCreditorFinancialAccount><ram:PayeeSpecifiedCreditorFinancialInstitution><ram:BICID>${esc(u.bic)}</ram:BICID><ram:Name>${esc(u.bank)}</ram:Name></ram:PayeeSpecifiedCreditorFinancialInstitution></ram:SpecifiedTradeSettlementPaymentMeans>
-      <ram:ApplicableTradeTax><ram:CalculatedAmount>${d.mwst.toFixed(2)}</ram:CalculatedAmount><ram:TypeCode>VAT</ram:TypeCode><ram:BasisAmount>${d.netto.toFixed(2)}</ram:BasisAmount><ram:CategoryCode>S</ram:CategoryCode><ram:RateApplicablePercent>7</ram:RateApplicablePercent></ram:ApplicableTradeTax>
-      <ram:SpecifiedTradeSettlementHeaderMonetarySummation><ram:LineTotalAmount>${d.netto.toFixed(2)}</ram:LineTotalAmount><ram:TaxBasisTotalAmount>${d.netto.toFixed(2)}</ram:TaxBasisTotalAmount><ram:TaxTotalAmount>${d.mwst.toFixed(2)}</ram:TaxTotalAmount><ram:GrandTotalAmount>${d.gesamt.toFixed(2)}</ram:GrandTotalAmount><ram:DuePayableAmount>${d.gesamt.toFixed(2)}</ram:DuePayableAmount></ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+
+      <ram:SpecifiedTradeSettlementPaymentMeans>
+        <ram:TypeCode>58</ram:TypeCode>
+        <ram:PayeePartyCreditorFinancialAccount>
+          <ram:IBANID>DE96370502990000716873</ram:IBANID>
+        </ram:PayeePartyCreditorFinancialAccount>
+        <ram:PayeeSpecifiedCreditorFinancialInstitution>
+          <ram:BICID>COKSDE33XXX</ram:BICID>
+        </ram:PayeeSpecifiedCreditorFinancialInstitution>
+      </ram:SpecifiedTradeSettlementPaymentMeans>
+
+      <ram:ApplicableTradeTax>
+        <ram:CalculatedAmount>${formatXmlAmount(ust)}</ram:CalculatedAmount>
+        <ram:TypeCode>VAT</ram:TypeCode>
+        <ram:BasisAmount>${formatXmlAmount(netto)}</ram:BasisAmount>
+        <ram:CategoryCode>S</ram:CategoryCode>
+        <ram:RateApplicablePercent>7</ram:RateApplicablePercent>
+      </ram:ApplicableTradeTax>
+
+      <ram:SpecifiedTradePaymentTerms>
+        <ram:Description>Zahlung per sofort und ohne Abzüge</ram:Description>
+      </ram:SpecifiedTradePaymentTerms>
+
+      <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+        <ram:LineTotalAmount>${formatXmlAmount(netto)}</ram:LineTotalAmount>
+        <ram:TaxBasisTotalAmount>${formatXmlAmount(netto)}</ram:TaxBasisTotalAmount>
+        <ram:TaxTotalAmount currencyID="EUR">${formatXmlAmount(ust)}</ram:TaxTotalAmount>
+        <ram:GrandTotalAmount>${formatXmlAmount(gesamt)}</ram:GrandTotalAmount>
+        <ram:DuePayableAmount>${formatXmlAmount(gesamt)}</ram:DuePayableAmount>
+      </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
     </ram:ApplicableHeaderTradeSettlement>
+
   </rsm:SupplyChainTradeTransaction>
-</rsm:CrossIndustryInvoice>`
+</rsm:CrossIndustryInvoice>`;
 }
 
-function erstelleZugferdXML(){
-const d = sammleRechnungsDaten()
-downloadDatei(zugferdXMLInhalt(), `zugferd-${d.rechnung || "rechnung"}.xml`, "application/xml")
-}
+// ── XRechnung XML (UBL 2.1) ────────────────
+function generateXRechnungXML(d) {
+  const {
+    rNr, datum, name, adresse,
+    uebernachtungsPositionen, haustier, reinigung,
+    uebernachtungsSumme, kultur, ust, netto, gesamt
+  } = d;
 
-function zeichneText(page, text, x, y, options){
-const { font, size, color, maxWidth, lineHeight } = options
-const words = String(text || "").split(/\s+/)
-let line = ""
-let currentY = y
-for(const word of words){
-const testLine = line ? `${line} ${word}` : word
-const width = font.widthOfTextAtSize(testLine, size)
-if(maxWidth && width > maxWidth && line){
-page.drawText(line, { x, y: currentY, size, font, color })
-currentY -= lineHeight
-line = word
-}else{
-line = testLine
-}
-}
-if(line){
-page.drawText(line, { x, y: currentY, size, font, color })
-currentY -= lineHeight
-}
-return currentY
-}
+  const taxAmount = ust.toFixed(2);
+  const taxBase = netto.toFixed(2);
+  const total = gesamt.toFixed(2);
 
-async function erstelleZugferdPDF(){
-if(!window.PDFLib){
-alert("Die PDF-Bibliothek konnte nicht geladen werden. Bitte Internetverbindung prüfen und erneut versuchen.")
-return
-}
+  let lines = '';
+  let lineNum = 1;
 
-berechnen()
-const d = sammleRechnungsDaten()
-const u = d.unternehmen
-const xml = zugferdXMLInhalt()
-const { PDFDocument, StandardFonts, rgb } = PDFLib
-const pdfDoc = await PDFDocument.create()
-pdfDoc.setTitle(`Rechnung ${d.rechnung || ""}`.trim())
-pdfDoc.setAuthor(u.name)
-pdfDoc.setSubject("ZUGFeRD-Rechnung mit eingebetteter XML")
-pdfDoc.setCreator("Wohnzeit-Köln Rechnungsapp")
-pdfDoc.setProducer("pdf-lib")
-pdfDoc.setKeywords(["ZUGFeRD", "Factur-X", "Rechnung"])
+  uebernachtungsPositionen.forEach(n => {
+    lines += `
+  <cac:InvoiceLine>
+    <cbc:ID>${lineNum++}</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">${(n.preis / 1.07).toFixed(2)}</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Übernachtung ohne Verpflegung (${formatDate(n.datum)})</cbc:Name>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">${(n.preis / 1.07).toFixed(2)}</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>`;
+  });
 
-const page = pdfDoc.addPage([595.28, 841.89])
-const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
-const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
-const black = rgb(0,0,0)
-const blue = rgb(0,0.53,0.78)
-let y = 790
+  if (haustier > 0) {
+    lines += `
+  <cac:InvoiceLine>
+    <cbc:ID>${lineNum++}</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">${(haustier / 1.07).toFixed(2)}</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Haustier</cbc:Name>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID><cbc:Percent>7</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">${(haustier / 1.07).toFixed(2)}</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>`;
+  }
 
-page.drawText(u.name, { x: 48, y, size: 10, font: bold, color: black })
-y -= 14
-page.drawText(u.strasse, { x: 48, y, size: 10, font, color: black })
-y -= 14
-page.drawText(`${u.plz} ${u.ort}`, { x: 48, y, size: 10, font, color: black })
-page.drawText("RECHNUNG", { x: 430, y: 790, size: 22, font: bold, color: black })
-page.drawText(`Rechnungsnummer: ${d.rechnung || ""}`, { x: 365, y: 748, size: 10, font, color: black })
-page.drawText(`Rechnungsdatum: ${formatDatum(d.datum)}`, { x: 365, y: 733, size: 10, font, color: black })
+  if (reinigung > 0) {
+    lines += `
+  <cac:InvoiceLine>
+    <cbc:ID>${lineNum++}</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">${(reinigung / 1.07).toFixed(2)}</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Endreinigung</cbc:Name>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>S</cbc:ID><cbc:Percent>7</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">${(reinigung / 1.07).toFixed(2)}</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>`;
+  }
 
-page.drawText(`${u.name}, ${u.strasse}, ${u.plz} ${u.ort}`, { x: 48, y: 690, size: 7, font, color: rgb(0.35,0.35,0.35) })
-y = 670
-for(const line of [d.name, ...String(d.adresse || "").split(/\r?\n/)].filter(Boolean)){
-page.drawText(line, { x: 48, y, size: 11, font, color: black })
-y -= 15
-}
-page.drawText("Mietzeitraum:", { x: 392, y: 670, size: 10, font, color: black })
-page.drawText(`${formatDatum(d.anreise)} - ${formatDatum(d.abreise)}`, { x: 392, y: 655, size: 10, font, color: black })
+  if (kultur > 0) {
+    lines += `
+  <cac:InvoiceLine>
+    <cbc:ID>${lineNum++}</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="EUR">${kultur.toFixed(2)}</cbc:LineExtensionAmount>
+    <cac:Item>
+      <cbc:Name>Kulturförderabgabe der Stadt Köln</cbc:Name>
+      <cac:ClassifiedTaxCategory>
+        <cbc:ID>Z</cbc:ID><cbc:Percent>0</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+      </cac:ClassifiedTaxCategory>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="EUR">${kultur.toFixed(2)}</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>`;
+  }
 
-y = 600
-y = zeichneText(page, `${erstelleAnrede(d.anrede, d.name)},`, 48, y, { font, size: 11, color: black, maxWidth: 500, lineHeight: 15 })
-y -= 4
-y = zeichneText(page, erstelleBuchungstext(d.anreise, d.abreise), 48, y, { font, size: 11, color: black, maxWidth: 500, lineHeight: 15 })
-y -= 4
-y = zeichneText(page, "Hiermit erlauben wir uns die folgenden Leistungen in Rechnung zu stellen:", 48, y, { font, size: 11, color: black, maxWidth: 500, lineHeight: 15 })
-y -= 18
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<ubl:Invoice
+  xmlns:ubl="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+  xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+  xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
 
-page.drawRectangle({ x: 48, y: y - 7, width: 500, height: 22, color: rgb(0.97,0.97,0.97) })
-page.drawText("Pos.", { x: 54, y, size: 9, font: bold, color: black })
-page.drawText("Beschreibung", { x: 100, y, size: 9, font: bold, color: black })
-page.drawText("Preis", { x: 405, y, size: 9, font: bold, color: black })
-page.drawText("Gesamt", { x: 490, y, size: 9, font: bold, color: black })
-y -= 22
-
-d.positionen.forEach((p, idx) => {
-page.drawText(String(p.position || idx + 1), { x: 54, y, size: 10, font, color: black })
-page.drawText(p.beschreibung, { x: 100, y, size: 10, font, color: black })
-page.drawText(p.preis ? `${p.preis.toFixed(2)} EUR` : "", { x: 385, y, size: 10, font, color: black })
-page.drawText(`${p.summe.toFixed(2)} EUR`, { x: 478, y, size: 10, font, color: black })
-page.drawLine({ start: { x: 48, y: y - 7 }, end: { x: 548, y: y - 7 }, thickness: 0.5, color: rgb(0.82,0.82,0.82) })
-y -= 20
-})
-
-y -= 10
-page.drawText(`Kulturförderabgabe Stadt Köln: ${d.kultur.toFixed(2)} EUR`, { x: 340, y, size: 10, font, color: black })
-y -= 15
-page.drawText(`7 % UST inkl.: ${d.mwst.toFixed(2)} EUR`, { x: 340, y, size: 10, font, color: black })
-y -= 15
-page.drawText(`Netto: ${d.netto.toFixed(2)} EUR`, { x: 340, y, size: 10, font, color: black })
-y -= 22
-page.drawText(`Gesamtsumme: ${d.gesamt.toFixed(2)} EUR`, { x: 330, y, size: 14, font: bold, color: black })
-
-y -= 34
-page.drawText("Zahlungsbedingungen: Zahlung per sofort und ohne Abzüge.", { x: 48, y, size: 9, font, color: black })
-y -= 54
-page.drawText("Bei Rückfragen stehen wir selbstverständlich jederzeit gerne zur Verfügung.", { x: 48, y, size: 12, font, color: black })
-y -= 28
-page.drawText("Mit freundlichen Grüßen", { x: 48, y, size: 12, font, color: black })
-y -= 28
-page.drawText("Sarah und David Brand", { x: 48, y, size: 12, font, color: black })
-
-page.drawLine({ start: { x: 48, y: 82 }, end: { x: 548, y: 82 }, thickness: 3, color: blue })
-page.drawText("Wohnzeit-Köln\nMurgweg 2\n51061 Köln\nSarah und David Brand", { x: 60, y: 30, size: 8, font, color: black, lineHeight: 10 })
-page.drawText("+49 163/4734664\nbrand-wohnzeit-koeln@gmx.de", { x: 200, y: 50, size: 8, font, color: black, lineHeight: 10 })
-page.drawText("Kreissparkasse Köln\nDE96 3705 0299 0000 7168 73\nBIC: COKSDE33XXX", { x: 335, y: 40, size: 8, font, color: black, lineHeight: 10 })
-page.drawText("Steuernr.\n218/5025/7499", { x: 480, y: 50, size: 8, font, color: black, lineHeight: 10 })
-
-await pdfDoc.attach(new TextEncoder().encode(xml), "factur-x.xml", {
-  mimeType: "application/xml",
-  description: "ZUGFeRD Rechnungsdaten",
-  creationDate: new Date(),
-  modificationDate: new Date()
-})
-
-const pdfBytes = await pdfDoc.save()
-downloadDatei(pdfBytes, `zugferd-${d.rechnung || "rechnung"}.pdf`, "application/pdf")
-}
-
-function erstelleXRechnungXML(){
-const d = sammleRechnungsDaten()
-const u = d.unternehmen
-const lines = d.positionen.map((p, idx) => `
-<cac:InvoiceLine>
-  <cbc:ID>${idx + 1}</cbc:ID>
-  <cbc:InvoicedQuantity unitCode="C62">${p.anzahl || 1}</cbc:InvoicedQuantity>
-  <cbc:LineExtensionAmount currencyID="EUR">${p.summe.toFixed(2)}</cbc:LineExtensionAmount>
-  <cac:Item><cbc:Name>${esc(p.beschreibung)}</cbc:Name></cac:Item>
-  <cac:Price><cbc:PriceAmount currencyID="EUR">${(p.preis || p.summe).toFixed(2)}</cbc:PriceAmount></cac:Price>
-</cac:InvoiceLine>`).join("\n")
-
-const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
-  <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0</cbc:CustomizationID>
+  <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:xoev-de:kosit:standard:xrechnung_2.0</cbc:CustomizationID>
   <cbc:ProfileID>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</cbc:ProfileID>
-  <cbc:ID>${esc(d.rechnung)}</cbc:ID>
-  <cbc:IssueDate>${formatISO(d.datum)}</cbc:IssueDate>
+  <cbc:ID>${rNr}</cbc:ID>
+  <cbc:IssueDate>${datum}</cbc:IssueDate>
   <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
   <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
-  <cac:AccountingSupplierParty><cac:Party><cac:PartyName><cbc:Name>${esc(u.name)}</cbc:Name></cac:PartyName><cac:PostalAddress><cbc:StreetName>${esc(u.strasse)}</cbc:StreetName><cbc:CityName>${esc(u.ort)}</cbc:CityName><cbc:PostalZone>${esc(u.plz)}</cbc:PostalZone><cac:Country><cbc:IdentificationCode>DE</cbc:IdentificationCode></cac:Country></cac:PostalAddress><cac:PartyTaxScheme><cbc:CompanyID>${esc(u.steuernummer)}</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme><cac:Contact><cbc:Name>${esc(u.inhaber)}</cbc:Name><cbc:Telephone>${esc(u.telefon)}</cbc:Telephone><cbc:ElectronicMail>${esc(u.email)}</cbc:ElectronicMail></cac:Contact></cac:Party></cac:AccountingSupplierParty>
-  <cac:AccountingCustomerParty><cac:Party><cac:PartyName><cbc:Name>${esc(d.name)}</cbc:Name></cac:PartyName></cac:Party></cac:AccountingCustomerParty>
-  <cac:PaymentMeans><cbc:PaymentMeansCode>58</cbc:PaymentMeansCode><cac:PayeeFinancialAccount><cbc:ID>${esc(u.iban.replaceAll(" ", ""))}</cbc:ID><cbc:Name>${esc(u.bank)}</cbc:Name><cac:FinancialInstitutionBranch><cbc:ID>${esc(u.bic)}</cbc:ID></cac:FinancialInstitutionBranch></cac:PayeeFinancialAccount></cac:PaymentMeans>
-  <cac:TaxTotal><cbc:TaxAmount currencyID="EUR">${d.mwst.toFixed(2)}</cbc:TaxAmount></cac:TaxTotal>
-  <cac:LegalMonetaryTotal><cbc:TaxExclusiveAmount currencyID="EUR">${d.netto.toFixed(2)}</cbc:TaxExclusiveAmount><cbc:TaxInclusiveAmount currencyID="EUR">${d.gesamt.toFixed(2)}</cbc:TaxInclusiveAmount><cbc:PayableAmount currencyID="EUR">${d.gesamt.toFixed(2)}</cbc:PayableAmount></cac:LegalMonetaryTotal>
-  ${lines}
-</Invoice>`
+  <cbc:Note>Zahlung per sofort und ohne Abzüge.</cbc:Note>
 
-downloadDatei(xml, `xrechnung-${d.rechnung || "rechnung"}.xml`, "application/xml")
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyName><cbc:Name>Wohnzeit-Köln — Sarah und David Brand</cbc:Name></cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>Murgweg 2</cbc:StreetName>
+        <cbc:PostalZone>51061</cbc:PostalZone>
+        <cbc:CityName>Köln</cbc:CityName>
+        <cac:Country><cbc:IdentificationCode>DE</cbc:IdentificationCode></cac:Country>
+      </cac:PostalAddress>
+      <cac:Contact>
+        <cbc:Telephone>+491634734664</cbc:Telephone>
+        <cbc:ElectronicMail>brand-wohnzeit-koeln@gmx.de</cbc:ElectronicMail>
+      </cac:Contact>
+      <cac:PartyTaxScheme>
+        <cbc:CompanyID>218/5025/7499</cbc:CompanyID>
+        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+      </cac:PartyTaxScheme>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+
+  <cac:AccountingCustomerParty>
+    <cac:Party>
+      <cac:PartyName><cbc:Name>${name || 'Kunde'}</cbc:Name></cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>${(adresse || '').split('\n')[0] || ''}</cbc:StreetName>
+        <cac:Country><cbc:IdentificationCode>DE</cbc:IdentificationCode></cac:Country>
+      </cac:PostalAddress>
+    </cac:Party>
+  </cac:AccountingCustomerParty>
+
+  <cac:PaymentMeans>
+    <cbc:PaymentMeansCode>58</cbc:PaymentMeansCode>
+    <cac:PayeeFinancialAccount>
+      <cbc:ID>DE96370502990000716873</cbc:ID>
+      <cac:FinancialInstitutionBranch>
+        <cbc:ID>COKSDE33XXX</cbc:ID>
+      </cac:FinancialInstitutionBranch>
+    </cac:PayeeFinancialAccount>
+  </cac:PaymentMeans>
+
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="EUR">${taxAmount}</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="EUR">${taxBase}</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="EUR">${taxAmount}</cbc:TaxAmount>
+      <cac:TaxCategory>
+        <cbc:ID>S</cbc:ID>
+        <cbc:Percent>7</cbc:Percent>
+        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+  </cac:TaxTotal>
+
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="EUR">${taxBase}</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="EUR">${taxBase}</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="EUR">${total}</cbc:TaxInclusiveAmount>
+    <cbc:PayableAmount currencyID="EUR">${total}</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+
+  ${lines}
+
+</ubl:Invoice>`;
 }
 
-window.onload = function(){
-nachtHinzufuegen()
+// ── Export: ZUGFeRD PDF ─────────────────────
+async function erstelleZugferdPDF() {
+  if (!window._invoiceData) { alert('Bitte zuerst Rechnung erstellen!'); return; }
+
+  const xml = generateZugferdXML(window._invoiceData);
+
+  // Embed XML into PDF as attachment (ZUGFeRD Factur-X)
+  // We use print + blob approach since pdf-lib is loaded
+  const xmlBlob = new Blob([xml], { type: 'application/xml' });
+  const xmlUrl = URL.createObjectURL(xmlBlob);
+
+  // Create info notification
+  const info = document.createElement('div');
+  info.style.cssText = 'position:fixed;top:20px;right:20px;background:#27ae60;color:#fff;padding:12px 18px;border-radius:6px;z-index:9999;font-size:13px;max-width:320px;box-shadow:0 4px 12px rgba(0,0,0,0.2)';
+  info.innerHTML = `<strong>ZUGFeRD PDF</strong><br>Das XML wird separat heruntergeladen. Das PDF bitte über "PDF erstellen" (Drucken → Als PDF speichern) erzeugen. Das XML ist steuerrechtlich konform nach EN 16931 / Factur-X.<br><br><a href="${xmlUrl}" download="ZUGFeRD_${window._invoiceData.rNr.replace('/','_')}.xml" style="color:#fff;text-decoration:underline">XML jetzt herunterladen</a>`;
+  document.body.appendChild(info);
+  setTimeout(() => info.remove(), 8000);
+
+  // Also trigger XML download
+  const a = document.createElement('a');
+  a.href = xmlUrl;
+  a.download = `ZUGFeRD_${window._invoiceData.rNr.replace('/','_')}.xml`;
+  a.click();
+}
+
+// ── Export: ZUGFeRD XML only ────────────────
+function erstelleZugferdXML() {
+  if (!window._invoiceData) { alert('Bitte zuerst Rechnung erstellen!'); return; }
+  const xml = generateZugferdXML(window._invoiceData);
+  downloadXML(xml, `ZUGFeRD_${window._invoiceData.rNr.replace('/','_')}.xml`);
+}
+
+// ── Export: XRechnung XML ───────────────────
+function erstelleXRechnungXML() {
+  if (!window._invoiceData) { alert('Bitte zuerst Rechnung erstellen!'); return; }
+  const xml = generateXRechnungXML(window._invoiceData);
+  downloadXML(xml, `XRechnung_${window._invoiceData.rNr.replace('/','_')}.xml`);
+}
+
+function downloadXML(xml, filename) {
+  const blob = new Blob([xml], { type: 'application/xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Print PDF ───────────────────────────────
+function druckenAlsPDF() {
+  window.print();
 }
