@@ -6,6 +6,7 @@
 <title>Rechnung - Wohnzeit Köln</title>
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
 </head>
 <body>
 
@@ -49,6 +50,13 @@
 <h2>Übernachtungen</h2>
 
 <div id="nachtListe"></div>
+
+<div class="sonderkondition">
+<label>Nächte zu Sonderkondition</label>
+<input type="number" id="sonderNaechte" value="0">
+<label>Preis pro Nacht</label>
+<input type="number" id="sonderPreis" value="0">
+</div>
 
 <button type="button" onclick="nachtHinzufuegen()">Übernachtung hinzufügen</button>
 
@@ -151,6 +159,7 @@ Mietzeitraum:<br>
 </footer>
 
 <button onclick="window.print()">PDF erstellen</button>
+<button onclick="erstelleZugferdPDF()">ZUGFeRD PDF erstellen</button>
 <button onclick="erstelleZugferdXML()">ZUGFeRD XML erstellen</button>
 <button onclick="erstelleXRechnungXML()">XRechnung XML erstellen</button>
 
