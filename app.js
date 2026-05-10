@@ -116,13 +116,29 @@ for(let i=0;i<anzahlFelder.length;i++){
 let anzahl = Number(anzahlFelder[i].value)
 let preis = Number(preisFelder[i].value)
 let sum = anzahl * preis
+if(anzahl > 0 && preis > 0){
 bruttoUebernachtung += sum
 positionen.push({
-position: i + 1,
+position: positionen.length + 1,
 beschreibung: `${anzahl}x Übernachtung ohne Verpflegung`,
 preis,
 summe: sum,
 anzahl
+})
+}
+}
+
+let sonderAnzahl = Number(document.getElementById("sonderNaechte")?.value || 0)
+let sonderPreis = Number(document.getElementById("sonderPreis")?.value || 0)
+let sonderSumme = sonderAnzahl * sonderPreis
+if(sonderAnzahl > 0 && sonderPreis > 0){
+bruttoUebernachtung += sonderSumme
+positionen.push({
+position: positionen.length + 1,
+beschreibung: `${sonderAnzahl}x Übernachtung zu Sonderkondition`,
+preis: sonderPreis,
+summe: sonderSumme,
+anzahl: sonderAnzahl
 })
 }
 
@@ -204,7 +220,7 @@ a.click()
 URL.revokeObjectURL(url)
 }
 
-function erstelleZugferdXML(){
+function zugferdXMLInhalt(){
 const d = sammleRechnungsDaten()
 const u = d.unternehmen
 const positionenXml = d.positionen.map((p, idx) => `
@@ -219,7 +235,7 @@ const positionenXml = d.positionen.map((p, idx) => `
   </ram:SpecifiedLineTradeSettlement>
 </ram:IncludedSupplyChainTradeLineItem>`).join("\n")
 
-const xml = `<?xml version="1.0" encoding="UTF-8"?>
+return `<?xml version="1.0" encoding="UTF-8"?>
 <rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
   <rsm:ExchangedDocumentContext><ram:GuidelineSpecifiedDocumentContextParameter><ram:ID>urn:factur-x.eu:1p0:basicwl</ram:ID></ram:GuidelineSpecifiedDocumentContextParameter></rsm:ExchangedDocumentContext>
   <rsm:ExchangedDocument>
@@ -247,8 +263,137 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
     </ram:ApplicableHeaderTradeSettlement>
   </rsm:SupplyChainTradeTransaction>
 </rsm:CrossIndustryInvoice>`
+}
 
-downloadDatei(xml, `zugferd-${d.rechnung || "rechnung"}.xml`, "application/xml")
+function erstelleZugferdXML(){
+const d = sammleRechnungsDaten()
+downloadDatei(zugferdXMLInhalt(), `zugferd-${d.rechnung || "rechnung"}.xml`, "application/xml")
+}
+
+function zeichneText(page, text, x, y, options){
+const { font, size, color, maxWidth, lineHeight } = options
+const words = String(text || "").split(/\s+/)
+let line = ""
+let currentY = y
+for(const word of words){
+const testLine = line ? `${line} ${word}` : word
+const width = font.widthOfTextAtSize(testLine, size)
+if(maxWidth && width > maxWidth && line){
+page.drawText(line, { x, y: currentY, size, font, color })
+currentY -= lineHeight
+line = word
+}else{
+line = testLine
+}
+}
+if(line){
+page.drawText(line, { x, y: currentY, size, font, color })
+currentY -= lineHeight
+}
+return currentY
+}
+
+async function erstelleZugferdPDF(){
+if(!window.PDFLib){
+alert("Die PDF-Bibliothek konnte nicht geladen werden. Bitte Internetverbindung prüfen und erneut versuchen.")
+return
+}
+
+berechnen()
+const d = sammleRechnungsDaten()
+const u = d.unternehmen
+const xml = zugferdXMLInhalt()
+const { PDFDocument, StandardFonts, rgb } = PDFLib
+const pdfDoc = await PDFDocument.create()
+pdfDoc.setTitle(`Rechnung ${d.rechnung || ""}`.trim())
+pdfDoc.setAuthor(u.name)
+pdfDoc.setSubject("ZUGFeRD-Rechnung mit eingebetteter XML")
+pdfDoc.setCreator("Wohnzeit-Köln Rechnungsapp")
+pdfDoc.setProducer("pdf-lib")
+pdfDoc.setKeywords(["ZUGFeRD", "Factur-X", "Rechnung"])
+
+const page = pdfDoc.addPage([595.28, 841.89])
+const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
+const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+const black = rgb(0,0,0)
+const blue = rgb(0,0.53,0.78)
+let y = 790
+
+page.drawText(u.name, { x: 48, y, size: 10, font: bold, color: black })
+y -= 14
+page.drawText(u.strasse, { x: 48, y, size: 10, font, color: black })
+y -= 14
+page.drawText(`${u.plz} ${u.ort}`, { x: 48, y, size: 10, font, color: black })
+page.drawText("RECHNUNG", { x: 430, y: 790, size: 22, font: bold, color: black })
+page.drawText(`Rechnungsnummer: ${d.rechnung || ""}`, { x: 365, y: 748, size: 10, font, color: black })
+page.drawText(`Rechnungsdatum: ${formatDatum(d.datum)}`, { x: 365, y: 733, size: 10, font, color: black })
+
+page.drawText(`${u.name}, ${u.strasse}, ${u.plz} ${u.ort}`, { x: 48, y: 690, size: 7, font, color: rgb(0.35,0.35,0.35) })
+y = 670
+for(const line of [d.name, ...String(d.adresse || "").split(/\r?\n/)].filter(Boolean)){
+page.drawText(line, { x: 48, y, size: 11, font, color: black })
+y -= 15
+}
+page.drawText("Mietzeitraum:", { x: 392, y: 670, size: 10, font, color: black })
+page.drawText(`${formatDatum(d.anreise)} - ${formatDatum(d.abreise)}`, { x: 392, y: 655, size: 10, font, color: black })
+
+y = 600
+y = zeichneText(page, `${erstelleAnrede(d.anrede, d.name)},`, 48, y, { font, size: 11, color: black, maxWidth: 500, lineHeight: 15 })
+y -= 4
+y = zeichneText(page, erstelleBuchungstext(d.anreise, d.abreise), 48, y, { font, size: 11, color: black, maxWidth: 500, lineHeight: 15 })
+y -= 4
+y = zeichneText(page, "Hiermit erlauben wir uns die folgenden Leistungen in Rechnung zu stellen:", 48, y, { font, size: 11, color: black, maxWidth: 500, lineHeight: 15 })
+y -= 18
+
+page.drawRectangle({ x: 48, y: y - 7, width: 500, height: 22, color: rgb(0.97,0.97,0.97) })
+page.drawText("Pos.", { x: 54, y, size: 9, font: bold, color: black })
+page.drawText("Beschreibung", { x: 100, y, size: 9, font: bold, color: black })
+page.drawText("Preis", { x: 405, y, size: 9, font: bold, color: black })
+page.drawText("Gesamt", { x: 490, y, size: 9, font: bold, color: black })
+y -= 22
+
+d.positionen.forEach((p, idx) => {
+page.drawText(String(p.position || idx + 1), { x: 54, y, size: 10, font, color: black })
+page.drawText(p.beschreibung, { x: 100, y, size: 10, font, color: black })
+page.drawText(p.preis ? `${p.preis.toFixed(2)} EUR` : "", { x: 385, y, size: 10, font, color: black })
+page.drawText(`${p.summe.toFixed(2)} EUR`, { x: 478, y, size: 10, font, color: black })
+page.drawLine({ start: { x: 48, y: y - 7 }, end: { x: 548, y: y - 7 }, thickness: 0.5, color: rgb(0.82,0.82,0.82) })
+y -= 20
+})
+
+y -= 10
+page.drawText(`Kulturförderabgabe Stadt Köln: ${d.kultur.toFixed(2)} EUR`, { x: 340, y, size: 10, font, color: black })
+y -= 15
+page.drawText(`7 % UST inkl.: ${d.mwst.toFixed(2)} EUR`, { x: 340, y, size: 10, font, color: black })
+y -= 15
+page.drawText(`Netto: ${d.netto.toFixed(2)} EUR`, { x: 340, y, size: 10, font, color: black })
+y -= 22
+page.drawText(`Gesamtsumme: ${d.gesamt.toFixed(2)} EUR`, { x: 330, y, size: 14, font: bold, color: black })
+
+y -= 34
+page.drawText("Zahlungsbedingungen: Zahlung per sofort und ohne Abzüge.", { x: 48, y, size: 9, font, color: black })
+y -= 54
+page.drawText("Bei Rückfragen stehen wir selbstverständlich jederzeit gerne zur Verfügung.", { x: 48, y, size: 12, font, color: black })
+y -= 28
+page.drawText("Mit freundlichen Grüßen", { x: 48, y, size: 12, font, color: black })
+y -= 28
+page.drawText("Sarah und David Brand", { x: 48, y, size: 12, font, color: black })
+
+page.drawLine({ start: { x: 48, y: 82 }, end: { x: 548, y: 82 }, thickness: 3, color: blue })
+page.drawText("Wohnzeit-Köln\nMurgweg 2\n51061 Köln\nSarah und David Brand", { x: 60, y: 30, size: 8, font, color: black, lineHeight: 10 })
+page.drawText("+49 163/4734664\nbrand-wohnzeit-koeln@gmx.de", { x: 200, y: 50, size: 8, font, color: black, lineHeight: 10 })
+page.drawText("Kreissparkasse Köln\nDE96 3705 0299 0000 7168 73\nBIC: COKSDE33XXX", { x: 335, y: 40, size: 8, font, color: black, lineHeight: 10 })
+page.drawText("Steuernr.\n218/5025/7499", { x: 480, y: 50, size: 8, font, color: black, lineHeight: 10 })
+
+await pdfDoc.attach(new TextEncoder().encode(xml), "factur-x.xml", {
+  mimeType: "application/xml",
+  description: "ZUGFeRD Rechnungsdaten",
+  creationDate: new Date(),
+  modificationDate: new Date()
+})
+
+const pdfBytes = await pdfDoc.save()
+downloadDatei(pdfBytes, `zugferd-${d.rechnung || "rechnung"}.pdf`, "application/pdf")
 }
 
 function erstelleXRechnungXML(){
