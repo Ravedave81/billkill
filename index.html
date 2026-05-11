@@ -74,6 +74,8 @@
 
 <div id="rechnung">
 
+<h1 class="rechnung-titel">RECHNUNG</h1>
+
 <div class="header">
 <div class="sender-block">
 <b>Wohnzeit-Köln</b><br>
@@ -82,9 +84,11 @@ Murgweg 2<br>
 </div>
 
 <div class="rechts invoice-meta">
-<b>RECHNUNG</b><br><br>
-Rechnungsnummer: <span id="r_nummer"></span><br>
-Rechnungsdatum: <span id="r_datum"></span>
+<table>
+<tr><td>Rechnungsnummer:</td><td><span id="r_nummer"></span></td></tr>
+<tr><td>Rechnungsdatum:</td><td><span id="r_datum"></span></td></tr>
+<tr><td>Mietzeitraum:</td><td><span id="zeitraum_meta"></span></td></tr>
+</table>
 </div>
 </div>
 
@@ -105,24 +109,42 @@ Mietzeitraum:<br>
 <p>Hiermit erlauben wir uns die folgenden Leistungen in Rechnung zu stellen:</p>
 </section>
 
-<table>
+<table class="positions-table">
 <thead>
 <tr>
 <th>Pos.</th>
 <th>Beschreibung</th>
-<th>Preis</th>
-<th>Gesamt</th>
+<th>Bruttopreis</th>
+<th>Gesamtpreis</th>
 </tr>
 </thead>
 <tbody id="positionen"></tbody>
 </table>
 
-<div class="summen">
-<p>Kulturförderabgabe Stadt Köln: <span id="kultur"></span></p>
-<p>7 % UST inkl.: <span id="mwst"></span></p>
-<p>Netto: <span id="netto"></span></p>
-<h2>Gesamtsumme: <span id="gesamt"></span></h2>
-</div>
+<table class="summen-table">
+<tbody>
+<tr>
+<td>Kulturförderabgabe der Stadt Köln</td>
+<td id="kultur"></td>
+</tr>
+<tr>
+<td>Endreinigung</td>
+<td id="reinigungSumme"></td>
+</tr>
+<tr>
+<td>7 % UST inkl.</td>
+<td id="mwst"></td>
+</tr>
+<tr>
+<td>Netto</td>
+<td id="netto"></td>
+</tr>
+<tr class="gesamt-row">
+<td>Gesamtsumme</td>
+<td id="gesamt"></td>
+</tr>
+</tbody>
+</table>
 
 <section class="invoice-copy closing-copy">
 <p><strong>Zahlungsbedingungen:</strong> Zahlung per sofort und ohne Abzüge.</p>
@@ -132,9 +154,32 @@ Mietzeitraum:<br>
 </section>
 
 <footer class="invoice-footer" aria-label="Rechnungsfuß">
-<div class="footer-image" aria-hidden="true">
-<img src="assets/fussnote.svg" alt="">
+<div class="footer-icons" aria-hidden="true">
+  <div class="footer-icon-circle">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9.5L12 3l9 6.5V21H3V9.5z"/>
+      <path d="M9 21V12h6v9"/>
+    </svg>
+  </div>
+  <div class="footer-icon-circle">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="5" width="20" height="14" rx="2"/>
+      <circle cx="8" cy="12" r="2"/>
+      <path d="M13 10h5M13 14h3"/>
+    </svg>
+  </div>
+  <div class="footer-icon-circle">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="M12 7v1m0 8v1"/>
+      <path d="M9.5 9.5A2.5 2.5 0 0 1 12 8c1.38 0 2.5.9 2.5 2s-1.12 2-2.5 2-2.5.9-2.5 2 1.12 2 2.5 2a2.5 2.5 0 0 0 2.5-1.5"/>
+    </svg>
+  </div>
 </div>
+
+<div class="footer-sep"></div>
+<div class="footer-sep2"></div>
+
 <address class="footer-data" id="unternehmensdaten">
 <div class="footer-col">
 <strong>Wohnzeit-Köln</strong>
