@@ -183,34 +183,25 @@ posHTML += `
 <tr>
 <td>${p.position || ""}</td>
 <td>${esc(p.beschreibung)}</td>
-<td>${p.preis ? p.preis.toFixed(2) + " €" : ""}</td>
-<td>${p.summe.toFixed(2)} €</td>
+<td style="text-align:right;white-space:nowrap">${p.preis ? p.preis.toFixed(2) + "&nbsp;Euro" : ""}</td>
+<td style="text-align:right;white-space:nowrap">${p.summe.toFixed(2)}&nbsp;Euro</td>
 </tr>
 `
 })
 
 document.getElementById("positionen").innerHTML = posHTML
 
-document.getElementById("kultur").innerText = daten.kultur.toFixed(2)+" €"
-document.getElementById("mwst").innerText = daten.mwst.toFixed(2)+" €"
-document.getElementById("netto").innerText = daten.netto.toFixed(2)+" €"
-document.getElementById("gesamt").innerText = daten.gesamt.toFixed(2)+" €"
+document.getElementById("kultur").innerHTML = daten.kultur.toFixed(2)+"&nbsp;Euro"
+document.getElementById("mwst").innerHTML = daten.mwst.toFixed(2)+"&nbsp;Euro"
+document.getElementById("netto").innerHTML = daten.netto.toFixed(2)+"&nbsp;Euro"
+document.getElementById("gesamt").innerHTML = daten.gesamt.toFixed(2)+"&nbsp;Euro"
 
-let zeitraumText = formatDatum(daten.anreise) + " – " + formatDatum(daten.abreise)
-document.getElementById("zeitraum").innerText = zeitraumText
-let ztMeta = document.getElementById("zeitraum_meta")
-if(ztMeta) ztMeta.innerText = zeitraumText
+document.getElementById("zeitraum").innerText =
+formatDatum(daten.anreise) + "–" + formatDatum(daten.abreise)
 
 document.getElementById("r_nummer").innerText = daten.rechnung
 
 document.getElementById("r_datum").innerText = formatDatum(daten.datum)
-
-// Populate separate Endreinigung cell in summen-table
-let reinigungSummeEl = document.getElementById("reinigungSumme")
-if(reinigungSummeEl){
-let rPos = daten.positionen.find(p => p.beschreibung === "Endreinigung")
-reinigungSummeEl.innerText = rPos ? rPos.summe.toFixed(2)+" €" : "0,00 €"
-}
 
 document.getElementById("kundeAdresse").innerHTML =
 esc(daten.name) + "<br>" + esc(daten.adresse).replaceAll("\n", "<br>")
@@ -324,196 +315,193 @@ pdfDoc.setKeywords(["ZUGFeRD", "Factur-X", "Rechnung"])
 const page = pdfDoc.addPage([595.28, 841.89])
 const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
 const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
-const black = rgb(0,0,0)
-const blue = rgb(0, 0.529, 0.784)  // #0087C8
-const grey = rgb(0.78,0.78,0.78)   // light grey for RECHNUNG title
-const white = rgb(1,1,1)
-const lightgrey = rgb(0.83,0.83,0.83)
-let y = 810
+const black  = rgb(0, 0, 0)
+const blue   = rgb(0, 0.529, 0.784)   // #0087c8
+const white  = rgb(1, 1, 1)
+const grey   = rgb(0.831, 0.831, 0.831) // Trennlinien
 
-// ── Large grey RECHNUNG title ──
-page.drawText("RECHNUNG", { x: 48, y, size: 38, font: bold, color: grey })
-y -= 46
+// ── Seitenmaße ──
+const W = 595.28
+const H = 841.89
+const marginL = 56
+const marginR = W - 56
+const colW = marginR - marginL   // 483
 
-// ── Sender block (top left) ──
-page.drawText(u.name, { x: 48, y, size: 10, font: bold, color: black })
-y -= 14
-page.drawText(u.strasse, { x: 48, y, size: 10, font, color: black })
-y -= 14
-page.drawText(`${u.plz} ${u.ort}`, { x: 48, y, size: 10, font, color: black })
-
-// ── Invoice meta (top right) ──
-const metaX = 340
-let metaY = 764
-const metaRows = [
-  ["Rechnungsnummer:", d.rechnung || ""],
-  ["Rechnungsdatum:", formatDatum(d.datum)],
-  ["Mietzeitraum:", `${formatDatum(d.anreise)} – ${formatDatum(d.abreise)}`]
-]
-for(const [label, val] of metaRows){
-  page.drawText(label, { x: metaX, y: metaY, size: 10, font: bold, color: black })
-  page.drawText(val, { x: metaX + 110, y: metaY, size: 10, font, color: black })
-  metaY -= 16
-}
-
-// ── Customer address block ──
-page.drawText(`${u.name}, ${u.strasse}, ${u.plz} ${u.ort}`, { x: 48, y: 700, size: 7, font, color: rgb(0.35,0.35,0.35) })
-y = 682
-for(const line of [d.name, ...String(d.adresse || "").split(/\r?\n/)].filter(Boolean)){
-  page.drawText(line, { x: 48, y, size: 11, font, color: black })
-  y -= 15
-}
-
-// ── Salutation & body text ──
-y = Math.min(y - 14, 620)
-y = zeichneText(page, `${erstelleAnrede(d.anrede, d.name)},`, 48, y, { font, size: 11, color: black, maxWidth: 500, lineHeight: 15 })
-y -= 4
-y = zeichneText(page, erstelleBuchungstext(d.anreise, d.abreise), 48, y, { font, size: 11, color: black, maxWidth: 500, lineHeight: 15 })
-y -= 4
-y = zeichneText(page, "Hiermit erlauben wir uns die folgenden Leistungen in Rechnung zu stellen:", 48, y, { font, size: 11, color: black, maxWidth: 500, lineHeight: 15 })
-y -= 18
-
-// ── Table header (blue background) ──
-const tableLeft = 48
-const tableRight = 548
-const tableWidth = tableRight - tableLeft
-const rowH = 22
-page.drawRectangle({ x: tableLeft, y: y - 7, width: tableWidth, height: rowH, color: blue })
-page.drawText("Pos.", { x: 54, y, size: 9, font: bold, color: white })
-page.drawText("Beschreibung", { x: 100, y, size: 9, font: bold, color: white })
-page.drawText("Bruttopreis", { x: 390, y, size: 9, font: bold, color: white })
-page.drawText("Gesamtpreis", { x: 472, y, size: 9, font: bold, color: white })
-y -= rowH
-
-// ── Table rows ──
-// Filter out Endreinigung from positions (shown separately in totals)
-const posFuerTabelle = d.positionen.filter(p => p.beschreibung !== "Endreinigung")
-posFuerTabelle.forEach((p, idx) => {
-  page.drawText(String(p.position || idx + 1), { x: 54, y, size: 10, font, color: black })
-  page.drawText(p.beschreibung, { x: 100, y, size: 10, font, color: black })
-  page.drawText(p.preis ? `${p.preis.toFixed(2)} Euro` : "", { x: 375, y, size: 10, font, color: black })
-  page.drawText(`${p.summe.toFixed(2)} Euro`, { x: 470, y, size: 10, font, color: black })
-  page.drawLine({ start: { x: tableLeft, y: y - 7 }, end: { x: tableRight, y: y - 7 }, thickness: 0.5, color: lightgrey })
-  y -= 20
+// ── Absender oben links (blau, fett) ──
+page.drawText(`${u.name}, ${u.strasse}, ${u.plz} ${u.ort}`, {
+  x: marginL, y: H - 50, size: 9, font: bold, color: blue
 })
 
-// ── Totals section (right-aligned rows) ──
-y -= 4
-const totalsLabelX = 300
-const totalsValueX = 490
-const totalsW = tableRight - totalsLabelX
+// ── RECHNUNG – großes blaues Wort oben rechts ──
+const titelText = "RECHNUNG"
+const titelSize = 28
+const titelW = bold.widthOfTextAtSize(titelText, titelSize)
+page.drawText(titelText, {
+  x: marginR - titelW, y: H - 50, size: titelSize, font: bold, color: blue
+})
 
-// Helper to draw a totals row
-function drawTotalRow(label, value, isHighlight){
-  if(isHighlight){
-    page.drawRectangle({ x: totalsLabelX, y: y - 7, width: totalsW, height: 22, color: blue })
-    page.drawText(label, { x: totalsLabelX + 6, y, size: 10, font: bold, color: white })
-    page.drawText(value, { x: totalsValueX, y, size: 10, font: bold, color: white })
-  } else {
-    page.drawText(label, { x: totalsLabelX + 6, y, size: 10, font, color: black })
-    page.drawText(value, { x: totalsValueX, y, size: 10, font, color: black })
-    page.drawLine({ start: { x: totalsLabelX, y: y - 7 }, end: { x: tableRight, y: y - 7 }, thickness: 0.5, color: lightgrey })
+// ── Rechnungsnummer + Datum rechts, tabelliert ──
+const labelX = 345
+const valueX = 460
+let metaY = H - 90
+const metaLines = [
+  ["Rechnungsnummer:", d.rechnung || ""],
+  ["Rechnungsdatum:",  formatDatum(d.datum)],
+]
+if(d.anreise && d.abreise){
+  metaLines.push(["Mietzeitraum:", `${formatDatum(d.anreise)}-`])
+  metaLines.push(["",              formatDatum(d.abreise)])
+}
+for(const [label, value] of metaLines){
+  if(label) page.drawText(label, { x: labelX, y: metaY, size: 10, font: bold, color: black })
+  page.drawText(value, { x: valueX, y: metaY, size: 10, font, color: black })
+  metaY -= 15
+}
+
+// ── Absender-Unterzeile (klein, unterstrichen wirkend via separatem Text) ──
+const senderLineY = H - 115
+page.drawText(`${u.name} ${u.strasse}, ${u.plz} ${u.ort}`, {
+  x: marginL, y: senderLineY, size: 7, font, color: rgb(0.4,0.4,0.4)
+})
+
+// ── Kunden-Adresse ──
+let addrY = senderLineY - 16
+const addrLines = [d.name, ...String(d.adresse || "").split(/\r?\n/)].filter(Boolean)
+for(const line of addrLines){
+  page.drawText(line, { x: marginL, y: addrY, size: 11, font, color: black })
+  addrY -= 15
+}
+
+// ── Datum unten rechts im Kunden-Block ──
+const datumRechtsY = H - 155
+const datumStr = formatDatum(d.datum)
+const datumW = font.widthOfTextAtSize(datumStr, 10)
+page.drawText(datumStr, { x: marginR - datumW, y: datumRechtsY, size: 10, font, color: black })
+
+// ── Anschreiben ──
+let textY = H - 225
+const anredeStr = erstelleAnrede(d.anrede, d.name) + ","
+page.drawText(anredeStr, { x: marginL, y: textY, size: 11, font, color: black })
+textY -= 18
+textY = zeichneText(page, erstelleBuchungstext(d.anreise, d.abreise), marginL, textY,
+  { font, size: 11, color: black, maxWidth: colW, lineHeight: 15 })
+textY -= 4
+textY = zeichneText(page, "Hiermit erlauben wir uns die folgenden Leistungen in Rechnung zu stellen:",
+  marginL, textY, { font, size: 11, color: black, maxWidth: colW, lineHeight: 15 })
+textY -= 18
+
+// ── Tabellen-Kopf (blau) ──
+const rowH = 22
+const colPos  = marginL
+const colDesc = marginL + 52
+const colBrutto = marginR - 160
+const colGesamt  = marginR - 60
+
+page.drawRectangle({ x: marginL, y: textY - 6, width: colW, height: rowH, color: blue })
+page.drawText("Pos.",        { x: colPos  + 4, y: textY + 2, size: 9, font: bold, color: white })
+page.drawText("Beschreibung",{ x: colDesc + 4, y: textY + 2, size: 9, font: bold, color: white })
+page.drawText("Bruttopreis", { x: colBrutto,   y: textY + 2, size: 9, font: bold, color: white })
+page.drawText("Gesamtpreis", { x: colGesamt,   y: textY + 2, size: 9, font: bold, color: white })
+textY -= rowH
+
+// ── Positions-Zeilen ──
+d.positionen.forEach((p) => {
+  const posStr   = String(p.position || "")
+  const descStr  = p.beschreibung
+  const brutStr  = p.preis ? `${p.preis.toFixed(2)} Euro` : ""
+  const gestStr  = `${p.summe.toFixed(2)} Euro`
+
+  page.drawText(posStr,  { x: colPos  + 4, y: textY, size: 10, font, color: black })
+  page.drawText(descStr, { x: colDesc + 4, y: textY, size: 10, font, color: black })
+  if(brutStr){
+    const bw = font.widthOfTextAtSize(brutStr, 10)
+    page.drawText(brutStr, { x: colBrutto + 60 - bw, y: textY, size: 10, font, color: black })
   }
-  y -= 20
-}
+  const gw = font.widthOfTextAtSize(gestStr, 10)
+  page.drawText(gestStr, { x: colGesamt + 60 - gw, y: textY, size: 10, font, color: black })
+  page.drawLine({ start: { x: marginL, y: textY - 7 }, end: { x: marginR, y: textY - 7 },
+    thickness: 0.5, color: grey })
+  textY -= rowH
+})
 
-// Endreinigung row
-const reinigungPos = d.positionen.find(p => p.beschreibung === "Endreinigung")
-if(reinigungPos){
-  drawTotalRow("Endreinigung", `${reinigungPos.summe.toFixed(2)} Euro`, false)
-}
-drawTotalRow(`Kulturförderabgabe der Stadt Köln`, `${d.kultur.toFixed(2)} Euro`, false)
-drawTotalRow(`7 % UST inkl.`, `${d.mwst.toFixed(2)} Euro`, false)
-drawTotalRow(`Netto`, `${d.netto.toFixed(2)} Euro`, false)
-y -= 2
-drawTotalRow(`Gesamtsumme`, `${d.gesamt.toFixed(2)} Euro`, true)
+// ── Kulturförderabgabe als Extra-Zeile in der Tabelle ──
+const kultStr = `${d.kultur.toFixed(2)} Euro`
+page.drawText("Kulturförderabgabe der Stadt Köln", { x: colDesc + 4, y: textY, size: 10, font, color: black })
+const kultW = font.widthOfTextAtSize(kultStr, 10)
+page.drawText(kultStr, { x: colGesamt + 60 - kultW, y: textY, size: 10, font, color: black })
+page.drawLine({ start: { x: marginL, y: textY - 7 }, end: { x: marginR, y: textY - 7 },
+  thickness: 0.5, color: grey })
+textY -= rowH
 
-// ── Closing copy ──
-y -= 22
-page.drawText("Zahlungsbedingungen: Zahlung per sofort und ohne Abzüge.", { x: 48, y, size: 9, font, color: black })
-y -= 50
-page.drawText("Bei Rückfragen stehen wir selbstverständlich jederzeit gerne zur Verfügung.", { x: 48, y, size: 12, font, color: black })
-y -= 28
-page.drawText("Mit freundlichen Grüßen", { x: 48, y, size: 12, font, color: black })
-y -= 28
-page.drawText("Sarah und David Brand", { x: 48, y, size: 12, font, color: black })
+// ── Summenblock rechts ──
+textY -= 6
+const mwstStr  = `${d.mwst.toFixed(2)} Euro`
+const nettoStr = `${d.netto.toFixed(2)} Euro`
+const gesamtStr = `${d.gesamt.toFixed(2)} Euro`
+const sumLabelX = 310
 
-// ── Footer icons (simple circle outlines with symbols) ──
-// Three circles at approx. x=150, x=300, x=450, y=108
-function drawCircleIcon(cx, cy, r){
-  // Approximate circle with many line segments
-  const steps = 32
-  for(let i = 0; i < steps; i++){
-    const a1 = (i / steps) * 2 * Math.PI
-    const a2 = ((i+1) / steps) * 2 * Math.PI
-    page.drawLine({
-      start: { x: cx + r * Math.cos(a1), y: cy + r * Math.sin(a1) },
-      end:   { x: cx + r * Math.cos(a2), y: cy + r * Math.sin(a2) },
-      thickness: 1.2, color: black
-    })
-  }
-}
+const mwstLabel = "7 % UST inkl."
+const mwstW = bold.widthOfTextAtSize(mwstLabel, 10)
+page.drawText(mwstLabel, { x: sumLabelX, y: textY, size: 10, font: bold, color: black })
+const mwstVW = bold.widthOfTextAtSize(mwstStr, 10)
+page.drawText(mwstStr, { x: marginR - mwstVW, y: textY, size: 10, font: bold, color: black })
+textY -= 16
 
-// House icon at x=150
-const hx = 150, hy = 108, hr = 18
-drawCircleIcon(hx, hy, hr)
-// Roof: triangle
-page.drawLine({ start:{x:hx-7,y:hy+2}, end:{x:hx,y:hy+9}, thickness:1.2, color:black })
-page.drawLine({ start:{x:hx,y:hy+9}, end:{x:hx+7,y:hy+2}, thickness:1.2, color:black })
-// House walls
-page.drawLine({ start:{x:hx-7,y:hy+2}, end:{x:hx-7,y:hy-6}, thickness:1.2, color:black })
-page.drawLine({ start:{x:hx+7,y:hy+2}, end:{x:hx+7,y:hy-6}, thickness:1.2, color:black })
-page.drawLine({ start:{x:hx-7,y:hy-6}, end:{x:hx+7,y:hy-6}, thickness:1.2, color:black })
-// Door
-page.drawLine({ start:{x:hx-2,y:hy-6}, end:{x:hx-2,y:hy-1}, thickness:1, color:black })
-page.drawLine({ start:{x:hx+2,y:hy-6}, end:{x:hx+2,y:hy-1}, thickness:1, color:black })
-page.drawLine({ start:{x:hx-2,y:hy-1}, end:{x:hx+2,y:hy-1}, thickness:1, color:black })
+page.drawText("Netto", { x: sumLabelX, y: textY, size: 10, font, color: black })
+const nettoVW = font.widthOfTextAtSize(nettoStr, 10)
+page.drawText(nettoStr, { x: marginR - nettoVW, y: textY, size: 10, font, color: black })
+textY -= 20
 
-// ID card icon at x=300
-const ix = 300, iy = 108
-drawCircleIcon(ix, iy, hr)
-// Card rectangle
-page.drawLine({ start:{x:ix-8,y:iy-5}, end:{x:ix+8,y:iy-5}, thickness:1, color:black })
-page.drawLine({ start:{x:ix-8,y:iy+5}, end:{x:ix+8,y:iy+5}, thickness:1, color:black })
-page.drawLine({ start:{x:ix-8,y:iy-5}, end:{x:ix-8,y:iy+5}, thickness:1, color:black })
-page.drawLine({ start:{x:ix+8,y:iy-5}, end:{x:ix+8,y:iy+5}, thickness:1, color:black })
-// Lines on card
-page.drawLine({ start:{x:ix-2,y:iy+2}, end:{x:ix+6,y:iy+2}, thickness:1, color:black })
-page.drawLine({ start:{x:ix-2,y:iy-1}, end:{x:ix+6,y:iy-1}, thickness:1, color:black })
-// Small circle on left
-page.drawLine({ start:{x:ix-6,y:iy+1}, end:{x:ix-4,y:iy+1}, thickness:2, color:black })
+// Gesamtsumme: blauer Balken
+const gesamtBoxH = 20
+page.drawRectangle({ x: sumLabelX - 4, y: textY - 4, width: marginR - sumLabelX + 8, height: gesamtBoxH, color: blue })
+page.drawText("Gesamtsumme", { x: sumLabelX, y: textY + 2, size: 11, font: bold, color: white })
+const gesamtVW = bold.widthOfTextAtSize(gesamtStr, 11)
+page.drawText(gesamtStr, { x: marginR - gesamtVW, y: textY + 2, size: 11, font: bold, color: white })
+textY -= 30
 
-// Dollar/coin icon at x=450
-const dx = 450, dy = 108
-drawCircleIcon(dx, dy, hr)
-// Inner circle
-drawCircleIcon(dx, dy, hr * 0.58)
-// Dollar S shape (simplified)
-page.drawLine({ start:{x:dx,y:dy+7}, end:{x:dx,y:dy-7}, thickness:1.5, color:black })
-page.drawLine({ start:{x:dx-3,y:dy+5}, end:{x:dx+3,y:dy+5}, thickness:1.2, color:black })
-page.drawLine({ start:{x:dx-3,y:dy}, end:{x:dx+3,y:dy}, thickness:1.2, color:black })
-page.drawLine({ start:{x:dx-3,y:dy-5}, end:{x:dx+3,y:dy-5}, thickness:1.2, color:black })
+// ── Zahlungsbedingungen ──
+page.drawText("Zahlungsbedingungen: Zahlung per sofort und ohne Abzüge.", {
+  x: marginL, y: textY, size: 9, font, color: black
+})
+textY -= 40
 
-// ── Blue double separator line ──
-page.drawLine({ start:{x:48,y:86}, end:{x:548,y:86}, thickness:4, color:blue })
-page.drawLine({ start:{x:48,y:81}, end:{x:548,y:81}, thickness:1.5, color:blue })
+// ── Schlusstext ──
+page.drawText("Bei Rückfragen stehen wir selbstverständlich jederzeit gerne zur Verfügung.", {
+  x: marginL, y: textY, size: 12, font, color: black
+})
+textY -= 26
+page.drawText("Mit freundlichen Grüßen", { x: marginL, y: textY, size: 12, font, color: black })
+textY -= 26
+page.drawText("Sarah und David Brand", { x: marginL, y: textY, size: 12, font, color: black })
 
-// ── Footer text columns ──
-page.drawText(`${u.name}`, { x: 60, y: 72, size: 8, font: bold, color: black })
-page.drawText(u.strasse, { x: 60, y: 62, size: 8, font, color: black })
-page.drawText(`${u.plz} ${u.ort}`, { x: 60, y: 52, size: 8, font, color: black })
-page.drawText(u.inhaber, { x: 60, y: 42, size: 8, font, color: black })
+// ── Fußzeile: dicker blauer Balken + 4 Spalten ──
+const footerY = 75
+page.drawLine({
+  start: { x: marginL, y: footerY + 16 }, end: { x: marginR, y: footerY + 16 },
+  thickness: 3, color: blue
+})
 
-page.drawText(u.telefon, { x: 190, y: 67, size: 8, font, color: black })
-page.drawText(u.email, { x: 190, y: 55, size: 8, font, color: black })
+// Spalte 1
+page.drawText(u.name,    { x: marginL, y: footerY,      size: 8, font, color: black })
+page.drawText(u.strasse, { x: marginL, y: footerY - 10, size: 8, font, color: black })
+page.drawText(`${u.plz} ${u.ort}`, { x: marginL, y: footerY - 20, size: 8, font, color: black })
+page.drawText(u.inhaber, { x: marginL, y: footerY - 30, size: 8, font, color: black })
 
-page.drawText(u.bank, { x: 330, y: 72, size: 8, font: bold, color: black })
-page.drawText(u.iban, { x: 330, y: 62, size: 8, font, color: black })
-page.drawText(`BIC: ${u.bic}`, { x: 330, y: 52, size: 8, font, color: black })
+// Spalte 2
+page.drawText(u.telefon, { x: 185, y: footerY - 5,  size: 8, font, color: black })
+page.drawText(u.email,   { x: 185, y: footerY - 16, size: 8, font, color: black })
 
-page.drawText("Steuernr.", { x: 475, y: 67, size: 8, font: bold, color: black })
-page.drawText(u.steuernummer, { x: 475, y: 55, size: 8, font, color: black })
+// Spalte 3
+page.drawText(u.bank,    { x: 330, y: footerY,       size: 8, font, color: black })
+page.drawText(u.iban,    { x: 330, y: footerY - 10,  size: 8, font, color: black })
+page.drawText(`BIC: ${u.bic}`, { x: 330, y: footerY - 20, size: 8, font, color: black })
 
+// Spalte 4
+page.drawText("Steuernr.",    { x: 480, y: footerY,      size: 8, font, color: black })
+page.drawText(u.steuernummer, { x: 480, y: footerY - 10, size: 8, font, color: black })
+
+// ── ZUGFeRD-XML einbetten ──
 await pdfDoc.attach(new TextEncoder().encode(xml), "factur-x.xml", {
   mimeType: "application/xml",
   description: "ZUGFeRD Rechnungsdaten",

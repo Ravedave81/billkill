@@ -1,321 +1,374 @@
-body{
-font-family:Arial, sans-serif;
-max-width:980px;
-margin:auto;
-padding:20px;
-color:#111;
-background:#f3f3f3;
+/* ===================================================
+   Wohnzeit-Köln – Rechnungs-PWA   |   style.css
+   Design orientiert an der Beispielrechnung (PDF)
+   =================================================== */
+
+/* ---------- Seitenrahmen ---------- */
+body {
+  font-family: Arial, sans-serif;
+  max-width: 980px;
+  margin: auto;
+  padding: 20px;
+  color: #111;
+  background: #f3f3f3;
 }
 
-.app>h1{
-margin-left:10px;
+.app > h1 {
+  margin-left: 10px;
 }
 
-#rechnung{
-box-sizing:border-box;
-max-width:820px;
-min-height:1120px;
-margin:0 auto 30px;
-padding:52px 58px 220px;
-background:#fff;
-box-shadow:0 8px 28px rgba(0,0,0,.12);
-font-size:14px;
-line-height:1.45;
-position:relative;
+/* ---------- Rechnungs-Vorschau ---------- */
+#rechnung {
+  box-sizing: border-box;
+  max-width: 820px;
+  min-height: 1120px;
+  margin: 0 auto 30px;
+  padding: 52px 58px 230px;
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(0,0,0,.12);
+  font-size: 14px;
+  line-height: 1.45;
+  position: relative;
 }
 
-.rechnung-titel{
-font-size:54px;
-font-weight:700;
-color:#c8c8c8;
-letter-spacing:2px;
-margin:0 0 32px 0;
-line-height:1;
+/* ---------- Kopfzeile: Absender links / RECHNUNG-Block rechts ---------- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 30px;
+  margin-bottom: 40px;
+  align-items: flex-start;
 }
 
-.header{
-display:flex;
-justify-content:space-between;
-gap:30px;
-margin-bottom:44px;
+.sender-block {
+  line-height: 1.5;
 }
 
-.sender-block{
-line-height:1.5;
+/* "RECHNUNG" groß + blau wie im PDF */
+.invoice-meta .rechnung-titel {
+  display: block;
+  font-size: 30px;
+  font-weight: 700;
+  color: #0087c8;          /* Blau aus dem Beispiel-PDF */
+  letter-spacing: 1px;
+  margin-bottom: 10px;
 }
 
-.rechts{
-text-align:right;
+.invoice-meta {
+  text-align: right;
+  white-space: nowrap;
 }
 
-.invoice-meta{
-font-size:13px;
-line-height:1.7;
+.invoice-meta table {
+  margin: 0;
+  width: auto;
+  border-collapse: collapse;
 }
 
-.invoice-meta table{
-width:auto;
-margin:0;
-border-collapse:collapse;
+.invoice-meta table td {
+  border: none;
+  padding: 2px 0 2px 12px;
+  font-size: 14px;
+  text-align: left;
 }
 
-.invoice-meta td{
-border:none;
-padding:1px 4px 1px 0;
-text-align:left;
-font-size:13px;
-white-space:nowrap;
+.invoice-meta table td:first-child {
+  font-weight: 700;
+  text-align: right;
+  padding-right: 6px;
+  padding-left: 0;
 }
 
-.invoice-meta td:first-child{
-font-weight:700;
-padding-right:8px;
+/* ---------- Kunden-Block ---------- */
+.kunde {
+  display: flex;
+  justify-content: space-between;
+  gap: 30px;
+  margin-bottom: 40px;
 }
 
-.kunde{
-display:flex;
-justify-content:space-between;
-gap:30px;
-margin-bottom:36px;
+.sender-line {
+  font-size: 10px;
+  color: #555;
+  margin-bottom: 10px;
+  text-decoration: underline;
 }
 
-.sender-line{
-font-size:10px;
-color:#666;
-margin-bottom:12px;
-text-decoration:underline;
+.customer-address {
+  white-space: normal;
+  line-height: 1.6;
+  font-size: 14px;
 }
 
-.customer-address{
-white-space:normal;
-line-height:1.6;
+.rental-period {
+  min-width: 190px;
+  text-align: right;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
-.rental-period{
-min-width:190px;
-text-align:right;
+/* ---------- Rechnungstext ---------- */
+.invoice-copy p {
+  margin: 0 0 10px;
 }
 
-.invoice-copy{
-line-height:1.6;
+.intro-copy {
+  margin-bottom: 20px;
 }
 
-.invoice-copy p{
-margin:0 0 12px;
+/* ---------- Positionstabelle ---------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0;
 }
 
-.intro-copy{
-margin-bottom:20px;
+thead tr {
+  background: #0087c8;   /* blauer Tabellenkopf wie im PDF */
 }
 
-.closing-copy{
-margin-top:30px;
-font-size:14px;
-line-height:1.5;
+th {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 10px 8px;
+  text-align: left;
+  border: none;
 }
 
-.closing-copy p{
-margin:0 0 16px;
+td {
+  border-bottom: 1px solid #d4d4d4;
+  padding: 9px 8px;
+  text-align: left;
+  vertical-align: top;
 }
 
-.closing-copy p:first-child{
-font-size:12px;
-margin-bottom:70px;
+th:first-child,
+td:first-child {
+  width: 52px;
 }
 
-table.positions-table{
-width:100%;
-border-collapse:collapse;
-margin-top:16px;
+th:nth-child(3),
+td:nth-child(3),
+th:nth-child(4),
+td:nth-child(4) {
+  text-align: right;
+  white-space: nowrap;
 }
 
-table.positions-table th,
-table.positions-table td{
-border-bottom:1px solid #d4d4d4;
-padding:9px 8px;
-text-align:left;
-vertical-align:top;
+/* ---------- Summenblock ---------- */
+.summen {
+  text-align: right;
+  margin-top: 18px;
+  font-size: 14px;
+  line-height: 1.7;
 }
 
-table.positions-table th{
-font-size:12px;
-font-weight:700;
-text-transform:uppercase;
-background:#0087C8;
-color:#fff;
+.summen p {
+  margin: 2px 0;
 }
 
-table.positions-table th:first-child,
-table.positions-table td:first-child{
-width:52px;
+.summen .mwst-zeile {
+  font-weight: 700;
 }
 
-table.positions-table th:nth-child(3),
-table.positions-table td:nth-child(3),
-table.positions-table th:nth-child(4),
-table.positions-table td:nth-child(4){
-text-align:right;
-white-space:nowrap;
+.summen .gesamt-zeile {
+  display: inline-block;
+  background: #0087c8;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 4px 10px;
+  margin-top: 6px;
+  border-radius: 2px;
 }
 
-.summen-wrapper{
-width:100%;
-margin-top:0;
+/* ---------- Schluss-Abschnitt ---------- */
+.closing-copy {
+  margin-top: 30px;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-.summen-table{
-width:100%;
-border-collapse:collapse;
-margin-top:0;
+.closing-copy p {
+  margin: 0 0 16px;
 }
 
-.summen-table td{
-border:none;
-border-bottom:1px solid #d4d4d4;
-padding:5px 8px;
-font-size:13px;
+.closing-copy p:first-child {
+  font-size: 12px;
 }
 
-.summen-table td:first-child{
-text-align:left;
+/* ---------- Fußzeile ---------- */
+.invoice-footer {
+  margin-top: 80px;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
-.summen-table td:last-child{
-text-align:right;
-white-space:nowrap;
-font-weight:700;
+.footer-image {
+  text-align: center;
 }
 
-.summen-table .gesamt-row td{
-background:#0087C8;
-color:#fff;
-font-weight:700;
-font-size:14px;
-padding:7px 8px;
-border-bottom:none;
+.footer-image img {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
-.form{
-background:#fff;
-padding:20px;
-margin:0 auto 40px;
-border-radius:8px;
-box-shadow:0 4px 18px rgba(0,0,0,.08);
+.footer-data {
+  display: grid;
+  grid-template-columns: 1.2fr 1.45fr 1.7fr 1fr;
+  gap: 18px;
+  margin-top: 6px;
+  font-style: normal;
+  text-align: center;
 }
 
-.sonderkondition{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:0 18px;
-margin-top:8px;
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
 }
 
-input,textarea,select{
-box-sizing:border-box;
-width:100%;
-padding:8px;
-margin-top:5px;
-margin-bottom:10px;
+.footer-col strong {
+  font-weight: 400;
 }
 
-textarea{
-min-height:90px;
+.footer-data a {
+  color: inherit;
+  text-decoration: none;
 }
 
-button{
-padding:12px 20px;
-margin-top:20px;
-margin-right:10px;
+/* ---------- Formular ---------- */
+.form {
+  background: #fff;
+  padding: 20px;
+  margin: 0 auto 40px;
+  border-radius: 8px;
+  box-shadow: 0 4px 18px rgba(0,0,0,.08);
 }
 
-.invoice-footer{
-margin-top:80px;
-font-size:11.5px;
-line-height:1.35;
+.sonderkondition {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 18px;
+  margin-top: 8px;
 }
 
-.footer-icons{
-display:flex;
-justify-content:center;
-align-items:center;
-gap:150px;
-margin-bottom:8px;
+input, textarea, select {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  margin-bottom: 10px;
 }
 
-.footer-icon-circle{
-width:44px;
-height:44px;
-border-radius:50%;
-border:2px solid #111;
-display:flex;
-align-items:center;
-justify-content:center;
+textarea {
+  min-height: 90px;
 }
 
-.footer-icon-circle svg{
-width:24px;
-height:24px;
+button {
+  padding: 12px 20px;
+  margin-top: 20px;
+  margin-right: 10px;
 }
 
-.footer-sep{
-border:none;
-height:4px;
-background:#0087C8;
-margin:0 0 2px;
+/* ---------- Responsive ---------- */
+@media (max-width: 700px) {
+  body {
+    padding: 10px;
+  }
+
+  #rechnung {
+    padding: 32px 24px 230px;
+    min-height: auto;
+  }
+
+  .header, .kunde {
+    display: block;
+  }
+
+  .invoice-meta, .rental-period {
+    text-align: left;
+    margin-top: 24px;
+  }
+
+  .sonderkondition {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-data {
+    grid-template-columns: 1fr;
+  }
 }
 
-.footer-sep2{
-border:none;
-height:1.5px;
-background:#0087C8;
-margin:0 0 8px;
-}
+/* ---------- Druck / PDF ---------- */
+@media print {
+  body {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+  }
 
-.footer-data{
-display:grid;
-grid-template-columns:1.2fr 1.45fr 1.7fr 1fr;
-gap:18px;
-font-style:normal;
-text-align:center;
-}
+  .app > h1 { display: none; }
+  .form      { display: none; }
+  button     { display: none; }
 
-.footer-col{
-display:flex;
-flex-direction:column;
-align-items:center;
-gap:2px;
-min-width:0;
-}
+  #rechnung {
+    max-width: none;
+    min-height: auto;
+    margin: 0;
+    padding: 14mm 14mm 40mm;
+    box-shadow: none;
+    font-size: 11pt;
+  }
 
-.footer-col strong{
-font-weight:400;
-}
+  thead tr {
+    background: #0087c8 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 
-.footer-data a{
-color:inherit;
-text-decoration:none;
-}
+  th {
+    color: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 
-@media (max-width:700px){
-body{padding:10px;}
-#rechnung{padding:32px 24px 220px;min-height:auto;}
-.header,.kunde{display:block;}
-.rechts,.rental-period{text-align:left;margin-top:24px;}
-.sonderkondition{grid-template-columns:1fr;}
-.footer-data{grid-template-columns:1fr;}
-.footer-icons{gap:50px;}
-}
+  .summen .gesamt-zeile {
+    background: #0087c8 !important;
+    color: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 
-@media print{
-body{max-width:none;margin:0;padding:0;background:#fff;}
-.app>h1{display:none;}
-.form{display:none;}
-button{display:none;}
-#rechnung{max-width:none;min-height:auto;margin:0;padding:5mm 4mm 40mm;box-shadow:none;font-size:12pt;}
-.rechnung-titel{font-size:38pt;}
-.closing-copy{font-size:12pt;}
-.closing-copy p:first-child{font-size:9pt;margin-bottom:18mm;}
-.invoice-footer{position:fixed;bottom:4mm;left:4mm;right:4mm;margin:0;background:#fff;font-size:8pt;line-height:1.2;}
-.footer-data{grid-template-columns:1.2fr 1.45fr 1.7fr 1fr;gap:8mm;margin-top:1mm;}
-.footer-icons{gap:90px;}
+  .closing-copy {
+    font-size: 12pt;
+  }
+
+  .closing-copy p:first-child {
+    font-size: 9pt;
+    margin-bottom: 18mm;
+  }
+
+  .invoice-footer {
+    position: fixed;
+    bottom: 4mm;
+    left: 4mm;
+    right: 4mm;
+    margin: 0;
+    background: #fff;
+    font-size: 9pt;
+    line-height: 1.2;
+  }
+
+  .footer-data {
+    grid-template-columns: 1.2fr 1.45fr 1.7fr 1fr;
+    gap: 8mm;
+    margin-top: 1mm;
+  }
 }
