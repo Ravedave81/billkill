@@ -341,16 +341,15 @@ page.drawText(titelText, {
 })
 
 // ── Rechnungsnummer + Datum rechts, tabelliert ──
-const labelX = 345
-const valueX = 460
+const labelX = 330
+const valueX = 448
 let metaY = H - 90
 const metaLines = [
   ["Rechnungsnummer:", d.rechnung || ""],
   ["Rechnungsdatum:",  formatDatum(d.datum)],
 ]
 if(d.anreise && d.abreise){
-  metaLines.push(["Mietzeitraum:", `${formatDatum(d.anreise)}-`])
-  metaLines.push(["",              formatDatum(d.abreise)])
+  metaLines.push(["Mietzeitraum:", `${formatDatum(d.anreise)}–${formatDatum(d.abreise)}`])
 }
 for(const [label, value] of metaLines){
   if(label) page.drawText(label, { x: labelX, y: metaY, size: 10, font: bold, color: black })
@@ -475,31 +474,96 @@ page.drawText("Mit freundlichen Grüßen", { x: marginL, y: textY, size: 12, fon
 textY -= 26
 page.drawText("Sarah und David Brand", { x: marginL, y: textY, size: 12, font, color: black })
 
-// ── Fußzeile: dicker blauer Balken + 4 Spalten ──
-const footerY = 75
+// ── Fußzeile: dicker blauer Balken + 3 Kreis-Symbole + 4 Datenspalten ──
+// 4 gleiche Spalten: Breite colW/4 je, Mittelpunkte bei 1/8, 3/8, 5/8, 7/8 von colW
+const footerLineY = 105
+const colWFoot = colW  // = marginR - marginL = 483
+const colWPart = colWFoot / 4  // ≈ 120.75
+
+// Mittelpunkte der ersten 3 Spalten (x-absolut)
+const sym1X = marginL + colWPart * 0.5
+const sym2X = marginL + colWPart * 1.5
+const sym3X = marginL + colWPart * 2.5
+
+// Blauer horizontaler Balken
 page.drawLine({
-  start: { x: marginL, y: footerY + 16 }, end: { x: marginR, y: footerY + 16 },
+  start: { x: marginL, y: footerLineY },
+  end:   { x: marginR, y: footerLineY },
   thickness: 3, color: blue
 })
 
+// ── Helfer: Kreis zeichnen (via drawEllipse falls verfügbar, sonst Bézier-Näherung) ──
+function drawCircle(pg, cx, cy, r, strokeColor, strokeWidth) {
+  // Bézier-Annäherung für Kreis: 4 Kurven mit κ≈0.5523
+  const k = 0.5523 * r
+  pg.drawBezierCurve({ start:{x:cx,y:cy+r}, startControl:{x:cx+k,y:cy+r}, endControl:{x:cx+r,y:cy+k}, end:{x:cx+r,y:cy}, thickness:strokeWidth, color:strokeColor, borderColor:strokeColor })
+  pg.drawBezierCurve({ start:{x:cx+r,y:cy}, startControl:{x:cx+r,y:cy-k}, endControl:{x:cx+k,y:cy-r}, end:{x:cx,y:cy-r}, thickness:strokeWidth, color:strokeColor, borderColor:strokeColor })
+  pg.drawBezierCurve({ start:{x:cx,y:cy-r}, startControl:{x:cx-k,y:cy-r}, endControl:{x:cx-r,y:cy-k}, end:{x:cx-r,y:cy}, thickness:strokeWidth, color:strokeColor, borderColor:strokeColor })
+  pg.drawBezierCurve({ start:{x:cx-r,y:cy}, startControl:{x:cx-r,y:cy+k}, endControl:{x:cx-k,y:cy+r}, end:{x:cx,y:cy+r}, thickness:strokeWidth, color:strokeColor, borderColor:strokeColor })
+}
+
+const iconR = 13    // Radius der Kreise
+const iconY = footerLineY + 22  // Mitte der Icons oberhalb der Linie
+
+// Symbol 1: Haus (△ + Rechteck) in Kreis
+const h1x = sym1X, h1y = iconY
+drawCircle(page, h1x, h1y, iconR, blue, 1)
+// Dach: Dreieck
+page.drawLine({ start:{x:h1x-7,y:h1y+2}, end:{x:h1x,y:h1y+9},   thickness:1.2, color:blue })
+page.drawLine({ start:{x:h1x,y:h1y+9},   end:{x:h1x+7,y:h1y+2}, thickness:1.2, color:blue })
+// Wände: Rechteck
+page.drawRectangle({ x:h1x-5, y:h1y-5, width:10, height:7, borderColor:blue, borderWidth:1.2, color:white })
+// Tür: kleines Rechteck
+page.drawRectangle({ x:h1x-2, y:h1y-5, width:4, height:5, borderColor:blue, borderWidth:1, color:white })
+
+// Symbol 2: Briefkasten/Liste in Kreis
+const h2x = sym2X, h2y = iconY
+drawCircle(page, h2x, h2y, iconR, blue, 1)
+// Äußeres Rechteck
+page.drawRectangle({ x:h2x-7, y:h2y-6, width:14, height:13, borderColor:blue, borderWidth:1.2, color:white })
+// Kleine Box links oben
+page.drawRectangle({ x:h2x-6, y:h2y+2, width:4, height:4, borderColor:blue, borderWidth:1, color:white })
+// Linien rechts
+page.drawLine({ start:{x:h2x-1,y:h2y+5}, end:{x:h2x+6,y:h2y+5}, thickness:1, color:blue })
+page.drawLine({ start:{x:h2x-1,y:h2y+3}, end:{x:h2x+6,y:h2y+3}, thickness:1, color:blue })
+// Untere Linien
+page.drawLine({ start:{x:h2x-6,y:h2y-1}, end:{x:h2x+6,y:h2y-1}, thickness:1, color:blue })
+page.drawLine({ start:{x:h2x-6,y:h2y-4}, end:{x:h2x+6,y:h2y-4}, thickness:1, color:blue })
+
+// Symbol 3: Dollar/Münze in Kreis
+const h3x = sym3X, h3y = iconY
+drawCircle(page, h3x, h3y, iconR, blue, 1)
+// Innerer Kreis
+drawCircle(page, h3x, h3y, 7, blue, 1)
+// $ Zeichen
+page.drawText("$", { x:h3x-3, y:h3y-4, size:9, font:bold, color:blue })
+
+// ── 4 Datenspalten (Texte) ──
+const footerTextY = footerLineY - 14
+const col1X = marginL + 4
+const col2X = marginL + colWPart + 4
+const col3X = marginL + colWPart * 2 + 4
+const col4X = marginL + colWPart * 3 + 4
+
 // Spalte 1
-page.drawText(u.name,    { x: marginL, y: footerY,      size: 8, font, color: black })
-page.drawText(u.strasse, { x: marginL, y: footerY - 10, size: 8, font, color: black })
-page.drawText(`${u.plz} ${u.ort}`, { x: marginL, y: footerY - 20, size: 8, font, color: black })
-page.drawText(u.inhaber, { x: marginL, y: footerY - 30, size: 8, font, color: black })
+page.drawText(u.name,                         { x: col1X, y: footerTextY,      size: 8, font, color: black })
+page.drawText(u.strasse,                       { x: col1X, y: footerTextY - 10, size: 8, font, color: black })
+page.drawText(`${u.plz} ${u.ort}`,            { x: col1X, y: footerTextY - 20, size: 8, font, color: black })
+page.drawText(u.inhaber,                       { x: col1X, y: footerTextY - 30, size: 8, font, color: black })
 
 // Spalte 2
-page.drawText(u.telefon, { x: 185, y: footerY - 5,  size: 8, font, color: black })
-page.drawText(u.email,   { x: 185, y: footerY - 16, size: 8, font, color: black })
+page.drawText(u.telefon,                       { x: col2X, y: footerTextY - 5,  size: 8, font, color: black })
+page.drawText(u.email,                         { x: col2X, y: footerTextY - 16, size: 8, font, color: black })
 
 // Spalte 3
-page.drawText(u.bank,    { x: 330, y: footerY,       size: 8, font, color: black })
-page.drawText(u.iban,    { x: 330, y: footerY - 10,  size: 8, font, color: black })
-page.drawText(`BIC: ${u.bic}`, { x: 330, y: footerY - 20, size: 8, font, color: black })
+page.drawText(u.bank,                          { x: col3X, y: footerTextY,      size: 8, font, color: black })
+page.drawText(u.iban,                          { x: col3X, y: footerTextY - 10, size: 8, font, color: black })
+page.drawText(`BIC: ${u.bic}`,                { x: col3X, y: footerTextY - 20, size: 8, font, color: black })
 
 // Spalte 4
-page.drawText("Steuernr.",    { x: 480, y: footerY,      size: 8, font, color: black })
-page.drawText(u.steuernummer, { x: 480, y: footerY - 10, size: 8, font, color: black })
+page.drawText("Steuernr.",                     { x: col4X, y: footerTextY,      size: 8, font, color: black })
+page.drawText(u.steuernummer,                  { x: col4X, y: footerTextY - 10, size: 8, font, color: black })
+
 
 // ── ZUGFeRD-XML einbetten ──
 await pdfDoc.attach(new TextEncoder().encode(xml), "factur-x.xml", {
