@@ -72,10 +72,8 @@
 
 </div>
 
-<!-- =================== RECHNUNGS-VORSCHAU =================== -->
 <div id="rechnung">
 
-  <!-- Kopfzeile -->
   <div class="header">
     <div class="sender-block">
       <b>Wohnzeit-Köln</b><br>
@@ -86,19 +84,12 @@
     <div class="invoice-meta">
       <span class="rechnung-titel">RECHNUNG</span>
       <table>
-        <tr>
-          <td>Rechnungsnummer:</td>
-          <td><span id="r_nummer"></span></td>
-        </tr>
-        <tr>
-          <td>Rechnungsdatum:</td>
-          <td><span id="r_datum"></span></td>
-        </tr>
+        <tr><td>Rechnungsnummer:</td><td><span id="r_nummer"></span></td></tr>
+        <tr><td>Rechnungsdatum:</td><td><span id="r_datum"></span></td></tr>
       </table>
     </div>
   </div>
 
-  <!-- Kunden-Adresse + Mietzeitraum -->
   <div class="kunde">
     <div>
       <div class="sender-line">Wohnzeit-Köln, Murgweg 2, 51061 Köln</div>
@@ -110,14 +101,12 @@
     </div>
   </div>
 
-  <!-- Anschreiben -->
   <section class="invoice-copy intro-copy">
     <p id="anredeText"></p>
     <p id="buchungsDankText"></p>
     <p>Hiermit erlauben wir uns die folgenden Leistungen in Rechnung zu stellen:</p>
   </section>
 
-  <!-- Positionstabelle -->
   <table>
     <thead>
       <tr>
@@ -128,7 +117,6 @@
       </tr>
     </thead>
     <tbody id="positionen"></tbody>
-    <!-- Summen direkt in der Tabelle (letzte Zeilen ohne Pos.-Nummer) -->
     <tbody id="summenZeilen">
       <tr>
         <td></td>
@@ -139,14 +127,12 @@
     </tbody>
   </table>
 
-  <!-- Summenblock rechts ausgerichtet -->
   <div class="summen">
     <p class="mwst-zeile">7&nbsp;% UST inkl. <span id="mwst"></span></p>
     <p>Netto <span id="netto"></span></p>
     <p><span class="gesamt-zeile">Gesamtsumme <span id="gesamt"></span></span></p>
   </div>
 
-  <!-- Schlusstext -->
   <section class="invoice-copy closing-copy">
     <p><strong>Zahlungsbedingungen:</strong> Zahlung per sofort und ohne Abzüge.</p>
     <p>Bei Rückfragen stehen wir selbstverständlich jederzeit gerne zur Verfügung.</p>
@@ -154,10 +140,9 @@
     <p>Sarah und David Brand</p>
   </section>
 
-  <!-- Fußzeile -->
   <footer class="invoice-footer" aria-label="Rechnungsfuß">
     <div class="footer-image" aria-hidden="true">
-      <img src="assets/fussnote_blau.svg" alt="">
+      <img src="assets/fussnote.svg" alt="">
     </div>
     <address class="footer-data" id="unternehmensdaten">
       <div class="footer-col">
@@ -187,9 +172,9 @@
   <button onclick="erstelleZugferdXML()">ZUGFeRD XML erstellen</button>
   <button onclick="erstelleXRechnungXML()">XRechnung XML erstellen</button>
 
-</div><!-- /#rechnung -->
+</div>
 
-</div><!-- /.app -->
+</div>
 
 <script src="app.js"></script>
 
